@@ -1,0 +1,8 @@
+{
+  "name": "@pinklet/shared",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}

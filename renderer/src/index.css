@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+    --font-sans: 'Inter', sans-serif;
+
+    /* Primary - Hot Pink */
+    --color-primary: rgb(238 45 124);
+    --color-primary-t20: rgb(238 45 124 / 0.80);
+    --color-primary-t40: rgb(238 45 124 / 0.60);
+    --color-primary-t60: rgb(238 45 124 / 0.40);
+    --color-primary-t80: rgb(238 45 124 / 0.20);
+    --color-primary-t90: rgb(238 45 124 / 0.10);
+    --color-primary-t95: rgb(238 45 124 / 0.05);
+    --color-primary-s20: #BE2463;
+    --color-primary-s40: #8F1B4A;
+
+    /* Secondary - Deep Blue */
+    --color-secondary: rgb(59 59 152);
+    --color-secondary-t20: rgb(59 59 152 / 0.80);
+    --color-secondary-t40: rgb(59 59 152 / 0.60);
+    --color-secondary-t60: rgb(59 59 152 / 0.40);
+    --color-secondary-t80: rgb(59 59 152 / 0.20);
+    --color-secondary-t90: rgb(59 59 152 / 0.10);
+    --color-secondary-t95: rgb(59 59 152 / 0.05);
+
+    /* Neutral - Near Black */
+    --color-neutral: rgb(9 9 9);
+    --color-neutral-80: rgb(9 9 9 / 0.80);
+    --color-neutral-60: rgb(9 9 9 / 0.60);
+    --color-neutral-40: rgb(9 9 9 / 0.40);
+    --color-neutral-20: rgb(9 9 9 / 0.20);
+    --color-neutral-10: rgb(9 9 9 / 0.10);
+    --color-neutral-5: rgb(9 9 9 / 0.05);
+
+    /* App background */
+    --color-app-bg: #FFF0F5;
+}
+
+* {
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #FFF0F5;
+    color: rgb(9 9 9);
+}

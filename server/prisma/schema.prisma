@@ -1,0 +1,166 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?  @unique
+  password  String
+  role      String   @default("cashier")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  bills     Bill[]
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  address   String?
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  items     Item[]
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String @unique
+  items Item[]
+}
+
+model Item {
+  id            String          @id @default(cuid())
+  name          String
+  barcode       String?         @unique
+  categoryId    String?
+  category      Category?       @relation(fields: [categoryId], references: [id])
+  supplierId    String?
+  supplier      Supplier?       @relation(fields: [supplierId], references: [id])
+  buyingPrice   Float
+  sellingPrice  Float
+  stock         Int             @default(0)
+  lowStockAlert Int             @default(10)
+  imageUrl      String?
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  billLines     BillLine[]
+  movements     StockMovement[]
+}
+
+model Customer {
+  id                  String               @id @default(cuid())
+  name                String
+  phone               String?              @unique
+  whatsappNumber      String?
+  email               String?
+  birthday            DateTime?
+  points              Int                  @default(0)
+  notes               String?
+  createdAt           DateTime             @default(now())
+  bills               Bill[]
+  loyaltyTransactions LoyaltyTransaction[]
+}
+
+model Bill {
+  id                 String     @id @default(cuid())
+  billNumber         String     @unique
+  cashierId          String
+  cashier            User       @relation(fields: [cashierId], references: [id])
+  customerId         String?
+  customer           Customer?  @relation(fields: [customerId], references: [id])
+  type               String     @default("quick_sale")
+  status             String     @default("completed")
+  paymentMethod      String
+  subtotal           Float
+  discountAmount     Float      @default(0)
+  tax                Float      @default(0)
+  loyaltyCoinsUsed   Int        @default(0)
+  loyaltyCoinsEarned Int        @default(0)
+  total              Float
+  amountReceived     Float      @default(0)
+  change             Float      @default(0)
+  note               String?
+  orderDate          DateTime?
+  deliveryDate       DateTime?
+  advancePayment     Float?
+  createdAt          DateTime   @default(now())
+  lines              BillLine[]
+}
+
+model BillLine {
+  id             String  @id @default(cuid())
+  billId         String
+  bill           Bill    @relation(fields: [billId], references: [id])
+  itemId         String
+  item           Item    @relation(fields: [itemId], references: [id])
+  quantity       Int
+  unitPrice      Float
+  buyingPrice    Float
+  discountAmount Float   @default(0)
+  discountType   String?
+  discountValue  Float?
+  lineTotal      Float
+  profit         Float   @default(0)
+}
+
+model StockMovement {
+  id        String   @id @default(cuid())
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id])
+  type      String
+  quantity  Int
+  billId    String?
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model DiscountPreset {
+  id       String  @id @default(cuid())
+  label    String
+  type     String
+  value    Float
+  isActive Boolean @default(true)
+}
+
+model LoyaltyTransaction {
+  id         String    @id @default(cuid())
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  type       String
+  coins      Int
+  billId     String?
+  note       String?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+model HeldBill {
+  id        String   @id @default(cuid())
+  label     String?
+  data      String
+  createdAt DateTime @default(now())
+}
+
+model CustomItemLog {
+  id           String   @id @default(cuid())
+  billId       String?
+  name         String
+  cakeType     String?
+  flavour      String?
+  weight       String?
+  message      String?
+  designNotes  String?
+  sellingPrice Float
+  buyingPrice  Float
+  quantity     Int      @default(1)
+  discount     Float    @default(0)
+  createdAt    DateTime @default(now())
+}
