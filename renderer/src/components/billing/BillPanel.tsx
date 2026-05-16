@@ -6,12 +6,6 @@ import HoldBillDrawer from './HoldBillDrawer'
 import { useBillingStore } from '@/stores/billingStore'
 import PreOrderModal from './PreOrderModal'
 
-const OCCASIONS = [
-  'Birthday', 'Anniversary', "Mother's Day", "Father's Day",
-  "Valentine's Day", 'Wedding', 'Baby Shower', 'Graduation',
-  'Christmas', 'New Year', 'Other',
-]
-
 export default function BillPanel() {
   const activeTab = useBillingStore((s) => s.activeTab)
   const setActiveTab = useBillingStore((s) => s.setActiveTab)
@@ -20,7 +14,6 @@ export default function BillPanel() {
   const loyaltyCoinsToUse = useBillingStore((s) => s.loyaltyCoinsToUse)
   const setLoyaltyCoins = useBillingStore((s) => s.setLoyaltyCoins)
   const preOrder = useBillingStore((s) => s.preOrder)
-  const setPreOrder = useBillingStore((s) => s.setPreOrder)
   const getSubtotal = useBillingStore((s) => s.getSubtotal)
   const getTotalDiscount = useBillingStore((s) => s.getTotalDiscount)
   const getLoyaltyDiscount = useBillingStore((s) => s.getLoyaltyDiscount)
@@ -94,80 +87,36 @@ export default function BillPanel() {
         </button>
       </div>
 
-      {/* Pre-Order fields */}
-      {activeTab === 'pre_order' && (
-        <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(9,9,9,0.06)', backgroundColor: 'rgba(238,45,124,0.02)', flexShrink: 0 }}>
-          <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 700, color: '#EE2D7C', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pre-Order Details</p>
-
-          {/* Dates row */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: '0 0 3px', fontSize: '10px', fontWeight: 600, color: 'rgba(9,9,9,0.45)' }}>Order Date</p>
-              <input
-                type="date"
-                value={preOrder.orderDate}
-                onChange={(e) => setPreOrder({ orderDate: e.target.value })}
-                style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '8px', border: '1px solid rgba(238,45,124,0.18)', backgroundColor: 'white', fontSize: '12px', color: '#090909', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: '0 0 3px', fontSize: '10px', fontWeight: 600, color: 'rgba(9,9,9,0.45)' }}>Required Date *</p>
-              <input
-                type="date"
-                value={preOrder.deliveryDate}
-                onChange={(e) => setPreOrder({ deliveryDate: e.target.value })}
-                style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '8px', border: '1px solid rgba(238,45,124,0.18)', backgroundColor: 'white', fontSize: '12px', color: '#090909', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
+      {/* Pre-Order Summary Banner */}
+      {activeTab === 'pre_order' && (preOrder.deliveryDate || preOrder.note) && (
+        <div style={{
+          padding: '8px 12px',
+          borderBottom: '1px solid rgba(9,9,9,0.06)',
+          backgroundColor: 'rgba(238,45,124,0.04)',
+          flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#EE2D7C', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              📋 Pre-Order
+            </p>
           </div>
-
-          {/* Occasion */}
-          <div style={{ marginBottom: '8px' }}>
-            <p style={{ margin: '0 0 3px', fontSize: '10px', fontWeight: 600, color: 'rgba(9,9,9,0.45)' }}>Occasion / Reason</p>
-            <select
-              value={preOrder.note}
-              onChange={(e) => setPreOrder({ note: e.target.value })}
-              style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '8px', border: '1px solid rgba(238,45,124,0.18)', backgroundColor: 'white', fontSize: '12px', color: '#090909', fontFamily: 'Inter, sans-serif', outline: 'none', cursor: 'pointer' }}
-            >
-              <option value="">Select occasion...</option>
-              {OCCASIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
+          <div style={{ display: 'flex', gap: '12px', marginTop: '4px', flexWrap: 'wrap' }}>
+            {preOrder.deliveryDate && (
+              <span style={{ fontSize: '11px', color: 'rgba(9,9,9,0.60)' }}>
+                📅 Due: <strong>{new Date(preOrder.deliveryDate).toLocaleDateString('en-LK', { month: 'short', day: 'numeric', year: 'numeric' })}</strong>
+              </span>
+            )}
+            {preOrder.note && (
+              <span style={{ fontSize: '11px', color: 'rgba(9,9,9,0.60)' }}>
+                🎉 {preOrder.note}
+              </span>
+            )}
+            {preOrder.advancePayment && parseFloat(preOrder.advancePayment) > 0 && (
+              <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: 600 }}>
+                💰 Advance: Rs. {parseFloat(preOrder.advancePayment).toFixed(2)}
+              </span>
+            )}
           </div>
-
-          {/* Advance payment */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: '0 0 3px', fontSize: '10px', fontWeight: 600, color: 'rgba(9,9,9,0.45)' }}>Advance (Rs.)</p>
-              <input
-                type="number"
-                value={preOrder.advancePayment}
-                onChange={(e) => setPreOrder({ advancePayment: e.target.value })}
-                placeholder="0.00"
-                style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '8px', border: '1px solid rgba(238,45,124,0.18)', backgroundColor: 'white', fontSize: '12px', color: '#090909', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: '0 0 3px', fontSize: '10px', fontWeight: 600, color: 'rgba(9,9,9,0.45)' }}>Advance Type</p>
-              <select
-                value={preOrder.advanceType || ''}
-                onChange={(e) => setPreOrder({ advanceType: e.target.value } as any)}
-                style={{ width: '100%', height: '34px', padding: '0 8px', borderRadius: '8px', border: '1px solid rgba(238,45,124,0.18)', backgroundColor: 'white', fontSize: '12px', color: '#090909', fontFamily: 'Inter, sans-serif', outline: 'none', cursor: 'pointer' }}
-              >
-                <option value="">Select...</option>
-                <option value="cash">💵 Cash</option>
-                <option value="card">💳 Card</option>
-                <option value="transfer">🔄 Transfer</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Balance preview */}
-          {advancePaid > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: '8px', padding: '7px 10px' }}>
-              <span style={{ fontSize: '11px', color: '#92400e', fontWeight: 500 }}>Balance Remaining</span>
-              <span style={{ fontSize: '12px', fontWeight: 700, color: '#b45309' }}>Rs. {Math.max(0, balance).toFixed(2)}</span>
-            </div>
-          )}
         </div>
       )}
 
@@ -261,7 +210,15 @@ export default function BillPanel() {
       </div>
 
       {/* Modals */}
-      {showPreOrder && <PreOrderModal onClose={() => setShowPreOrder(false)} onProceed={() => setShowPreOrder(false)} />}
+      {showPreOrder && (
+        <PreOrderModal
+          onClose={() => setShowPreOrder(false)}
+          onProceed={() => {
+            setShowPreOrder(false)
+            setShowPayment(true)
+          }}
+        />
+      )}
       {showPayment && <PaymentModal onClose={() => setShowPayment(false)} />}
       {showHold && <HoldBillDrawer onClose={() => setShowHold(false)} />}
       {showCustomer && <CustomerSearch onClose={() => setShowCustomer(false)} />}

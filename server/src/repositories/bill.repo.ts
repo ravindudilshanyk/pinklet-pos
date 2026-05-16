@@ -40,10 +40,35 @@ export const billRepo = {
 
     return db.bill.create({
       data: {
-        ...billData,
         billNumber,
+        cashierId: billData.cashierId,
+        customerId: billData.customerId || null,
+        type: billData.type,
+        paymentMethod: billData.paymentMethod,
+        subtotal: billData.subtotal,
+        discountAmount: billData.discountAmount,
+        tax: billData.tax,
+        loyaltyCoinsUsed: billData.loyaltyCoinsUsed,
+        loyaltyCoinsEarned: billData.loyaltyCoinsEarned,
+        total: billData.total,
+        amountReceived: billData.amountReceived,
+        change: billData.change,
+        note: billData.note || null,
+        orderDate: billData.orderDate || null,
+        deliveryDate: billData.deliveryDate || null,
+        advancePayment: billData.advancePayment || null,
         lines: {
-          create: lines,
+          create: lines.map((l) => ({
+            itemId: l.itemId,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+            buyingPrice: l.buyingPrice,
+            discountAmount: l.discountAmount,
+            discountType: l.discountType || null,
+            discountValue: l.discountValue || null,
+            lineTotal: l.lineTotal,
+            profit: l.profit,
+          })),
         },
       },
       include: {

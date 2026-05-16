@@ -4,8 +4,6 @@ import { customerRepo } from "../repositories/customer.repo";
 import { db } from "../utils/db";
 
 const COINS_PER_AMOUNT = 1000;
-const COIN_VALUE = 1;
-const MIN_BILL_FOR_REDEMPTION = 200;
 const COIN_EXPIRY_DAYS = 365;
 
 export const billingService = {
@@ -40,43 +38,64 @@ export const billingService = {
     deliveryDate?: Date;
     advancePayment?: number;
   }) => {
-    // Calculate profit per line
+    // Build lines with profit
     const lines = data.items.map((item) => ({
-      ...item,
+      itemId: item.itemId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      buyingPrice: item.buyingPrice,
+      discountAmount: item.discountAmount,
+      discountType: item.discountType,
+      discountValue: item.discountValue,
+      lineTotal: item.lineTotal,
       profit:
         (item.unitPrice - item.buyingPrice) * item.quantity -
         item.discountAmount,
     }));
 
-    // Calculate loyalty coins earned
     const coinsEarned = Math.floor(data.total / COINS_PER_AMOUNT);
 
-    // Create bill
+    // Create bill with lines — never pass items to repo
     const bill = await billRepo.create({
-      ...data,
-      lines,
+      cashierId: data.cashierId,
+      customerId: data.customerId,
+      type: data.type,
+      paymentMethod: data.paymentMethod,
+      subtotal: data.subtotal,
+      discountAmount: data.discountAmount,
+      tax: data.tax,
+      loyaltyCoinsUsed: data.loyaltyCoinsUsed,
       loyaltyCoinsEarned: coinsEarned,
+      total: data.total,
+      amountReceived: data.amountReceived,
+      change: data.change,
+      note: data.note,
+      orderDate: data.orderDate,
+      deliveryDate: data.deliveryDate,
+      advancePayment: data.advancePayment,
+      lines,
     });
 
-    // Deduct stock for each item
+    // Deduct stock
     for (const item of data.items) {
-      await itemRepo.updateStock(item.itemId, item.quantity);
-
-      // Record stock movement
-      await db.stockMovement.create({
-        data: {
-          itemId: item.itemId,
-          type: "sale",
-          quantity: -item.quantity,
-          billId: bill.id,
-          note: `Sold in bill ${bill.billNumber}`,
-        },
-      });
+      try {
+        await itemRepo.updateStock(item.itemId, item.quantity);
+        await db.stockMovement.create({
+          data: {
+            itemId: item.itemId,
+            type: "sale",
+            quantity: -item.quantity,
+            billId: bill.id,
+            note: `Sold in ${bill.billNumber}`,
+          },
+        });
+      } catch {
+        // Skip if item not in inventory (custom items)
+      }
     }
 
-    // Handle loyalty coins
+    // Loyalty coins
     if (data.customerId) {
-      // Deduct redeemed coins
       if (data.loyaltyCoinsUsed > 0) {
         await customerRepo.updatePoints(
           data.customerId,
@@ -87,22 +106,20 @@ export const billingService = {
           type: "redeem",
           coins: -data.loyaltyCoinsUsed,
           billId: bill.id,
-          note: `Redeemed for bill ${bill.billNumber}`,
+          note: `Redeemed for ${bill.billNumber}`,
         });
       }
 
-      // Add earned coins
       if (coinsEarned > 0) {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + COIN_EXPIRY_DAYS);
-
         await customerRepo.updatePoints(data.customerId, coinsEarned);
         await customerRepo.addLoyaltyTransaction({
           customerId: data.customerId,
           type: "earn",
           coins: coinsEarned,
           billId: bill.id,
-          note: `Earned from bill ${bill.billNumber}`,
+          note: `Earned from ${bill.billNumber}`,
           expiresAt,
         });
       }
@@ -120,10 +137,7 @@ export const billingService = {
 
   getHeldBills: async () => {
     const held = await billRepo.getHeldBills();
-    return held.map((h) => ({
-      ...h,
-      data: JSON.parse(h.data),
-    }));
+    return held.map((h) => ({ ...h, data: JSON.parse(h.data) }));
   },
 
   deleteHeldBill: (id: string) => {
