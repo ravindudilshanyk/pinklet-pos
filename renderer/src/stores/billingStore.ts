@@ -39,6 +39,7 @@ interface BillingState {
     deliveryDate: "";
     advancePayment: "";
     advanceType: "";
+    designNotes: "";
     note: "";
   };
 
@@ -85,6 +86,8 @@ export const useBillingStore = create<BillingState>((set, get) => ({
     orderDate: "",
     deliveryDate: "",
     advancePayment: "",
+    advanceType: "",
+    designNotes: "",
     note: "",
   },
 
@@ -187,6 +190,8 @@ export const useBillingStore = create<BillingState>((set, get) => ({
         orderDate: "",
         deliveryDate: "",
         advancePayment: "",
+        advanceType: "",
+        designNotes: "",
         note: "",
       },
     }),

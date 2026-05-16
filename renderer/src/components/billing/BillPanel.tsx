@@ -4,6 +4,7 @@ import CustomerSearch from './CustomerSearch'
 import PaymentModal from './PaymentModal'
 import HoldBillDrawer from './HoldBillDrawer'
 import { useBillingStore } from '@/stores/billingStore'
+import PreOrderModal from './PreOrderModal'
 
 const OCCASIONS = [
   'Birthday', 'Anniversary', "Mother's Day", "Father's Day",
@@ -29,6 +30,7 @@ export default function BillPanel() {
   const [showPayment, setShowPayment] = useState(false)
   const [showHold, setShowHold] = useState(false)
   const [showCustomer, setShowCustomer] = useState(false)
+  const [showPreOrder, setShowPreOrder] = useState(false)
 
   const subtotal = getSubtotal()
   const discount = getTotalDiscount()
@@ -238,7 +240,13 @@ export default function BillPanel() {
         </div>
 
         <button
-          onClick={() => setShowPayment(true)}
+          onClick={() => {
+            if (activeTab === 'pre_order') {
+              setShowPreOrder(true)
+            } else {
+              setShowPayment(true)
+            }
+          }}
           disabled={items.length === 0}
           style={{
             width: '100%', padding: '14px', borderRadius: '12px', border: 'none',
@@ -253,6 +261,7 @@ export default function BillPanel() {
       </div>
 
       {/* Modals */}
+      {showPreOrder && <PreOrderModal onClose={() => setShowPreOrder(false)} onProceed={() => setShowPreOrder(false)} />}
       {showPayment && <PaymentModal onClose={() => setShowPayment(false)} />}
       {showHold && <HoldBillDrawer onClose={() => setShowHold(false)} />}
       {showCustomer && <CustomerSearch onClose={() => setShowCustomer(false)} />}
