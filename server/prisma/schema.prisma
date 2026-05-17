@@ -53,6 +53,9 @@ model Item {
   createdAt     DateTime        @default(now())
   billLines     BillLine[]
   movements     StockMovement[]
+  marketPrice   Float?
+  initialDiscount Float?        @default(0) 
+  wasteLogs     WasteLog[]
 }
 
 model Customer {
@@ -163,4 +166,15 @@ model CustomItemLog {
   quantity     Int      @default(1)
   discount     Float    @default(0)
   createdAt    DateTime @default(now())
+}
+
+model WasteLog {
+  id        String   @id @default(cuid())
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id])
+  quantity  Int
+  reason    String
+  note      String?
+  cost      Float    @default(0)
+  createdAt DateTime @default(now())
 }

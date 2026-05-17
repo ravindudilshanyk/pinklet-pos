@@ -3,8 +3,39 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { itemsService } from "@/services/items.service";
 import ItemFormModal from "@/components/inventory/ItemFormModal";
 import StockUpModal from "@/components/inventory/StockUpModal";
+import WasteModal from "@/components/inventory/WasteModal";
 
 type FilterType = "all" | "low_stock" | "out_of_stock";
+
+interface Item {
+  id: string;
+  name: string;
+  barcode?: string;
+  categoryId?: string;
+  category?: { name: string };
+  supplierId?: string;
+  supplier?: { name: string };
+  buyingPrice: number;
+  sellingPrice: number;
+  stock: number;
+  lowStockAlert: number;
+  imageUrl?: string;
+  marketPrice?: number;
+  initialDiscount?: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Supplier {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
 
 export default function Items() {
   const queryClient = useQueryClient();
@@ -13,8 +44,9 @@ export default function Items() {
   const [selectedSupplier, setSelectedSupplier] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
   const [showAddItem, setShowAddItem] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [stockUpItem, setStockUpItem] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [stockUpItem, setStockUpItem] = useState<Item | null>(null);
+  const [wasteItem, setWasteItem] = useState<Item | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: [
@@ -56,9 +88,9 @@ export default function Items() {
   };
 
   const lowStockCount = items.filter(
-    (i: any) => i.stock <= i.lowStockAlert && i.stock > 0,
+    (i: Item) => i.stock <= i.lowStockAlert && i.stock > 0,
   ).length;
-  const outOfStockCount = items.filter((i: any) => i.stock === 0).length;
+  const outOfStockCount = items.filter((i: Item) => i.stock === 0).length;
 
   return (
     <div
@@ -238,7 +270,7 @@ export default function Items() {
           }}
         >
           <option value="">All Categories</option>
-          {categories.map((c: any) => (
+          {categories.map((c: Category) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
@@ -266,7 +298,7 @@ export default function Items() {
           }}
         >
           <option value="">All Suppliers</option>
-          {suppliers.map((s: any) => (
+          {suppliers.map((s: Supplier) => (
             <option key={s.id} value={s.id}>
               {s.name}
             </option>
@@ -325,27 +357,27 @@ export default function Items() {
           selectedCategory ||
           selectedSupplier ||
           filter !== "all") && (
-          <button
-            onClick={() => {
-              setSearch("");
-              setSelectedCategory("");
-              setSelectedSupplier("");
-              setFilter("all");
-            }}
-            style={{
-              padding: "5px 12px",
-              borderRadius: "8px",
-              border: "1px solid rgba(9,9,9,0.12)",
-              backgroundColor: "transparent",
-              color: "rgba(9,9,9,0.45)",
-              fontSize: "12px",
-              cursor: "pointer",
-              fontFamily: "Inter, sans-serif",
-            }}
-          >
-            Clear filters
-          </button>
-        )}
+            <button
+              onClick={() => {
+                setSearch("");
+                setSelectedCategory("");
+                setSelectedSupplier("");
+                setFilter("all");
+              }}
+              style={{
+                padding: "5px 12px",
+                borderRadius: "8px",
+                border: "1px solid rgba(9,9,9,0.12)",
+                backgroundColor: "transparent",
+                color: "rgba(9,9,9,0.45)",
+                fontSize: "12px",
+                cursor: "pointer",
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              Clear filters
+            </button>
+          )}
       </div>
 
       {/* Table */}
@@ -450,7 +482,7 @@ export default function Items() {
           </div>
         ) : (
           <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 320px)" }}>
-            {items.map((item: any, index: number) => (
+            {items.map((item: Item, index: number) => (
               <ItemTableRow
                 key={item.id}
                 item={item}
@@ -461,6 +493,7 @@ export default function Items() {
                 }}
                 onDelete={() => handleDelete(item.id)}
                 onStockUp={() => setStockUpItem(item)}
+                onWaste={() => setWasteItem(item)}  
               />
             ))}
           </div>
@@ -485,6 +518,13 @@ export default function Items() {
           onSaved={refresh}
         />
       )}
+      {wasteItem && (
+        <WasteModal
+          item={wasteItem}
+          onClose={() => setWasteItem(null)}
+          onSaved={refresh}
+        />
+      )}
     </div>
   );
 }
@@ -496,12 +536,14 @@ function ItemTableRow({
   onEdit,
   onDelete,
   onStockUp,
+  onWaste,
 }: {
-  item: any;
+  item: Item;
   isLast: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onStockUp: () => void;
+  onWaste: () => void;
 }) {
   const isLowStock = item.stock <= item.lowStockAlert && item.stock > 0;
   const isOutOfStock = item.stock === 0;
@@ -757,6 +799,23 @@ function ItemTableRow({
             viewBox="0 0 24 24"
           >
             <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+
+        {/* Waste/Damage */}
+        <button
+          onClick={onWaste}
+          title="Log waste/damage"
+          style={{
+            width: '30px', height: '30px', borderRadius: '8px',
+            border: '1px solid rgba(245,158,11,0.25)',
+            backgroundColor: 'rgba(245,158,11,0.08)',
+            color: '#f59e0b', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </button>
 

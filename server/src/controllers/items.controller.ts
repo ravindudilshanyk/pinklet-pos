@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { inventoryService } from "../services/inventory.service";
 import { sendSuccess, sendError } from "../utils/response";
+import { db } from '../utils/db'
 
 export const itemsController = {
   getItems: async (req: Request, res: Response) => {
@@ -135,6 +136,42 @@ export const itemsController = {
       sendSuccess(res, item);
     } catch {
       sendError(res, "Failed to adjust stock", "ADJUST_ERROR", 500);
+    }
+  },
+
+  logWaste: async (req: Request, res: Response) => {
+    try {
+      const { quantity, reason, note } = req.body;
+      const item = await db.item.findUnique({ where: { id: req.params.id } });
+      if (!item) return sendError(res, "Item not found", "NOT_FOUND", 404);
+
+      await db.wasteLog.create({
+        data: {
+          itemId: req.params.id,
+          quantity,
+          reason,
+          note: note || null,
+          cost: quantity * item.buyingPrice,
+        },
+      });
+
+      await db.item.update({
+        where: { id: req.params.id },
+        data: { stock: { decrement: quantity } },
+      });
+
+      await db.stockMovement.create({
+        data: {
+          itemId: req.params.id,
+          type: "waste",
+          quantity: -quantity,
+          note: reason,
+        },
+      });
+
+      sendSuccess(res, { logged: true });
+    } catch {
+      sendError(res, "Failed to log waste", "WASTE_ERROR", 500);
     }
   },
 };

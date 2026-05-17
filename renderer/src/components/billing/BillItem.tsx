@@ -79,17 +79,15 @@ export default function BillItemRow({ item, index }: Props) {
               minimumFractionDigits: 2,
             })}
           </p>
-          <p
-            style={{
-              fontSize: "11px",
-              color: "#22c55e",
-              margin: 0,
-              fontWeight: 500,
-            }}
-          >
-            +Rs.{" "}
-            {item.profit.toLocaleString("en-LK", { minimumFractionDigits: 2 })}
-          </p>
+          {item.discount ? (
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#ef4444', fontWeight: 500 }}>
+              -{' '}Rs. {item.discount.amount.toFixed(2)} off
+            </p>
+          ) : (
+            <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(9,9,9,0.30)' }}>
+              No discount
+            </p>
+          )}
         </div>
 
         {/* Remove */}

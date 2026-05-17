@@ -24,6 +24,7 @@ export default function BillPanel() {
   const [showHold, setShowHold] = useState(false)
   const [showCustomer, setShowCustomer] = useState(false)
   const [showPreOrder, setShowPreOrder] = useState(false)
+  const [showForceCustomer, setShowForceCustomer] = useState(false)
 
   const subtotal = getSubtotal()
   const discount = getTotalDiscount()
@@ -190,6 +191,10 @@ export default function BillPanel() {
 
         <button
           onClick={() => {
+            if (!customer) {
+              setShowForceCustomer(true)
+              return
+            }
             if (activeTab === 'pre_order') {
               setShowPreOrder(true)
             } else {
@@ -222,6 +227,23 @@ export default function BillPanel() {
       {showPayment && <PaymentModal onClose={() => setShowPayment(false)} />}
       {showHold && <HoldBillDrawer onClose={() => setShowHold(false)} />}
       {showCustomer && <CustomerSearch onClose={() => setShowCustomer(false)} />}
+
+      {showForceCustomer && (
+        <ForceCustomerModal
+          onSkip={() => {
+            setShowForceCustomer(false)
+            if (activeTab === 'pre_order') {
+              setShowPreOrder(true)
+            } else {
+              setShowPayment(true)
+            }
+          }}
+          onLink={() => {
+            setShowForceCustomer(false)
+            setShowCustomer(true)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -231,6 +253,46 @@ function TotalRow({ label, value, color }: { label: string; value: string; color
     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
       <span style={{ fontSize: '12px', color: 'rgba(9,9,9,0.50)' }}>{label}</span>
       <span style={{ fontSize: '12px', fontWeight: 500, color: color || '#090909' }}>{value}</span>
+    </div>
+  )
+}
+
+function ForceCustomerModal({ onSkip, onLink }: { onSkip: () => void; onLink: () => void }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, backgroundColor: 'rgba(9,9,9,0.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 100, fontFamily: 'Inter, sans-serif',
+    }}>
+      <div style={{
+        backgroundColor: 'white', borderRadius: '20px', padding: '28px',
+        width: '100%', maxWidth: '380px',
+        boxShadow: '0 8px 32px rgba(9,9,9,0.15)', textAlign: 'center',
+      }}>
+        <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(238,45,124,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '26px' }}>
+          👤
+        </div>
+        <h3 style={{ margin: '0 0 8px', fontSize: '17px', fontWeight: 700, color: '#090909' }}>
+          Link a Customer?
+        </h3>
+        <p style={{ margin: '0 0 24px', fontSize: '13px', color: 'rgba(9,9,9,0.55)', lineHeight: 1.5 }}>
+          Linking a customer enables loyalty coins, purchase history, and WhatsApp bill sending.
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <button
+            onClick={onLink}
+            style={{ width: '100%', padding: '13px', borderRadius: '12px', border: 'none', backgroundColor: '#EE2D7C', color: 'white', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+          >
+            👤 Link / Add Customer
+          </button>
+          <button
+            onClick={onSkip}
+            style={{ width: '100%', padding: '13px', borderRadius: '12px', border: '1px solid rgba(9,9,9,0.12)', backgroundColor: 'transparent', color: 'rgba(9,9,9,0.55)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+          >
+            Skip — Walk-in Customer
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

@@ -11,6 +11,7 @@ interface Props {
     lowStockAlert: number;
     imageUrl?: string;
     category?: { name: string };
+    marketPrice?: number;
   };
 }
 
@@ -172,15 +173,21 @@ export default function ItemCard({ item }: Props) {
             gap: "8px",
           }}
         >
-          <span
-            style={{
-              fontSize: "14px",
-              fontWeight: 700,
-              color: "#EE2D7C",
-            }}
-          >
-            Rs. {item.sellingPrice.toLocaleString()}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            {item.marketPrice && item.marketPrice > item.sellingPrice && (
+              <span style={{ fontSize: '10px', color: 'rgba(9,9,9,0.40)', textDecoration: 'line-through' }}>
+                Rs. {item.marketPrice.toLocaleString()}
+              </span>
+            )}
+            <span style={{ fontSize: '14px', fontWeight: 700, color: '#EE2D7C' }}>
+              Rs. {item.sellingPrice.toLocaleString()}
+            </span>
+            {item.marketPrice && item.marketPrice > item.sellingPrice && (
+              <span style={{ fontSize: '10px', color: '#22c55e', fontWeight: 600 }}>
+                Save Rs. {(item.marketPrice - item.sellingPrice).toLocaleString()}
+              </span>
+            )}
+          </div>
 
           <button
             onClick={handleAdd}

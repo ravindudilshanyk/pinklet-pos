@@ -23,5 +23,6 @@ router.get("/suppliers", itemsController.getSuppliers);
 router.post("/suppliers", itemsController.createSupplier);
 router.put("/suppliers/:id", itemsController.updateSupplier);
 router.delete("/suppliers/:id", itemsController.deleteSupplier);
+router.post("/:id/waste", itemsController.logWaste);
 
 export default router;

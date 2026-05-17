@@ -2,8 +2,46 @@ import { useState, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { itemsService } from '@/services/items.service'
 
+interface Item {
+  id: string;
+  name: string;
+  barcode?: string;
+  categoryId?: string;
+  supplierId?: string;
+  buyingPrice: number;
+  sellingPrice: number;
+  stock: number;
+  lowStockAlert: number;
+  imageUrl?: string;
+  marketPrice?: number;
+  initialDiscount?: number;
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Supplier {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+interface Error {
+  response?: {
+    data?: {
+      error?: {
+        message?: string;
+      };
+    };
+  };
+}
+
 interface Props {
-  item?: any
+  item?: Item | null
   onClose: () => void
   onSaved: () => void
 }
@@ -53,9 +91,12 @@ function QuickAddSupplier({
   onAdded,
 }: {
   onClose: () => void
-  onAdded: (supplier: any) => void
+  onAdded: (supplier: Supplier) => void
 }) {
-  const [form, setForm] = useState({ name: '', phone: '', email: '', address: '' })
+  const [form, setForm] = useState({
+    name: '', phone: '', email: '', address: '', marketPrice: '',
+    initialDiscount: '',
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -166,6 +207,8 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
     lowStockAlert: '10',
     imagePreview: '' as string,
     imageBase64: '' as string,
+    marketPrice: '',
+    initialDiscount: '',
   })
 
   const [loading, setLoading] = useState(false)
@@ -187,6 +230,8 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
 
   useEffect(() => {
     if (item) {
+      // Load item data into form when editing
+      // Note: Setting state directly in effect is intentional for form population
       setForm({
         name: item.name || '',
         barcode: item.barcode || '',
@@ -199,6 +244,8 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
         lowStockAlert: String(item.lowStockAlert || '10'),
         imagePreview: item.imageUrl || '',
         imageBase64: '',
+        marketPrice: String(item.marketPrice || ''),
+        initialDiscount: String(item.initialDiscount || ''),
       })
     }
   }, [item])
@@ -221,7 +268,7 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
     reader.readAsDataURL(file)
   }
 
-  const handleSupplierAdded = (supplier: any) => {
+  const handleSupplierAdded = (supplier: Supplier) => {
     queryClient.invalidateQueries({ queryKey: ['suppliers'] })
     refetchSuppliers()
     setForm((f) => ({ ...f, supplierId: supplier.id }))
@@ -272,8 +319,9 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
 
       onSaved()
       onClose()
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to save item')
+    } catch (err: unknown) {
+      const error = err as Error
+      setError(error.response?.data?.error?.message || 'Failed to save item')
     } finally {
       setLoading(false)
     }
@@ -390,7 +438,7 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
                   <div style={inputInner}>
                     <select value={form.categoryId} onChange={(e) => set('categoryId', e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
                       <option value="">Select category</option>
-                      {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {categories.map((c: Category) => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </select>
                   </div>
                 </div>
@@ -428,7 +476,7 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
                     style={{ ...inputStyle, cursor: 'pointer' }}
                   >
                     <option value="">Select supplier</option>
-                    {suppliers.map((s: any) => (
+                    {suppliers.map((s: Supplier) => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
@@ -450,8 +498,8 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
 
             {/* Show selected supplier info */}
             {form.supplierId && (
-              () => {
-                const sup = suppliers.find((s: any) => s.id === form.supplierId)
+              (() => {
+                const sup = suppliers.find((s: Supplier) => s.id === form.supplierId)
                 return sup ? (
                   <div style={{ backgroundColor: 'rgba(238,45,124,0.04)', borderRadius: '10px', padding: '8px 14px', marginBottom: '12px', marginTop: '-8px', display: 'flex', gap: '12px' }}>
                     <span style={{ fontSize: '12px', color: '#EE2D7C', fontWeight: 600 }}>🏭 {sup.name}</span>
@@ -459,8 +507,8 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
                     {sup.email && <span style={{ fontSize: '12px', color: 'rgba(9,9,9,0.45)' }}>{sup.email}</span>}
                   </div>
                 ) : null
-              }
-            )()}
+              })()
+            )}
 
             {/* Prices */}
             <div style={{ display: 'flex', gap: '12px' }}>
@@ -482,6 +530,50 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Market Price + Initial Discount */}
+            <div style={{ backgroundColor: 'rgba(59,59,152,0.04)', border: '1px solid rgba(59,59,152,0.12)', borderRadius: '14px', padding: '14px', marginBottom: '12px' }}>
+              <p style={{ margin: '0 0 12px', fontSize: '12px', fontWeight: 700, color: '#3B3B98' }}>
+                🏷 Market Price & Initial Discount (optional)
+              </p>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Market Price (Rs.)</label>
+                  <div style={inputRow}>
+                    <div style={inputInner}>
+                      <span style={{ fontSize: '13px', color: 'rgba(9,9,9,0.35)', fontWeight: 600 }}>Rs.</span>
+                      <input
+                        type="number"
+                        value={form.marketPrice || ''}
+                        onChange={(e) => set('marketPrice', e.target.value)}
+                        placeholder="Market rate"
+                        style={inputStyle}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Initial Discount (Rs.)</label>
+                  <div style={inputRow}>
+                    <div style={inputInner}>
+                      <span style={{ fontSize: '13px', color: 'rgba(9,9,9,0.35)', fontWeight: 600 }}>Rs.</span>
+                      <input
+                        type="number"
+                        value={form.initialDiscount || ''}
+                        onChange={(e) => set('initialDiscount', e.target.value)}
+                        placeholder="0.00"
+                        style={inputStyle}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {form.marketPrice && form.sellingPrice && (
+                <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#22c55e', fontWeight: 500 }}>
+                  Customer saves Rs. {(parseFloat(form.marketPrice) - parseFloat(form.sellingPrice || '0')).toFixed(2)} vs market price
+                </p>
+              )}
             </div>
 
             {/* Profit preview */}
