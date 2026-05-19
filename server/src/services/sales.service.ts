@@ -14,9 +14,7 @@ export const salesService = {
 
     if (filters.startDate || filters.endDate) {
       where.createdAt = {};
-      if (filters.startDate) {
-        where.createdAt.gte = new Date(filters.startDate);
-      }
+      if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
       if (filters.endDate) {
         const end = new Date(filters.endDate);
         end.setHours(23, 59, 59, 999);
@@ -37,9 +35,7 @@ export const salesService = {
           cashier: { select: { id: true, name: true, role: true } },
           customer: { select: { id: true, name: true, phone: true } },
           lines: {
-            include: {
-              item: { select: { id: true, name: true } },
-            },
+            include: { item: { select: { id: true, name: true } } },
           },
         },
         orderBy: { createdAt: "desc" },
@@ -73,6 +69,7 @@ export const salesService = {
                 id: true,
                 name: true,
                 imageUrl: true,
+                marketPrice: true,
                 category: { select: { name: true } },
               },
             },
@@ -84,7 +81,6 @@ export const salesService = {
 
   getSummary: async (startDate?: string, endDate?: string) => {
     const where: any = {};
-
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) where.createdAt.gte = new Date(startDate);
@@ -100,30 +96,141 @@ export const salesService = {
       include: { lines: true },
     });
 
-    const totalRevenue = bills.reduce((sum, b) => sum + b.total, 0);
-    const totalProfit = bills.reduce(
-      (sum, b) => sum + b.lines.reduce((s, l) => s + l.profit, 0),
-      0,
-    );
-    const totalDiscount = bills.reduce((sum, b) => sum + b.discountAmount, 0);
-    const totalBills = bills.length;
-    const totalItems = bills.reduce(
-      (sum, b) => sum + b.lines.reduce((s, l) => s + l.quantity, 0),
-      0,
-    );
-
-    const byPaymentMethod = bills.reduce((acc: any, b) => {
-      acc[b.paymentMethod] = (acc[b.paymentMethod] || 0) + b.total;
-      return acc;
-    }, {});
-
     return {
-      totalRevenue,
-      totalProfit,
-      totalDiscount,
-      totalBills,
-      totalItems,
-      byPaymentMethod,
+      totalRevenue: bills.reduce((sum, b) => sum + b.total, 0),
+      totalProfit: bills.reduce(
+        (sum, b) => sum + b.lines.reduce((s, l) => s + l.profit, 0),
+        0,
+      ),
+      totalDiscount: bills.reduce((sum, b) => sum + b.discountAmount, 0),
+      totalBills: bills.length,
+      totalItems: bills.reduce(
+        (sum, b) => sum + b.lines.reduce((s, l) => s + l.quantity, 0),
+        0,
+      ),
+      byPaymentMethod: bills.reduce((acc: any, b) => {
+        acc[b.paymentMethod] = (acc[b.paymentMethod] || 0) + b.total;
+        return acc;
+      }, {}),
     };
+  },
+
+  getPreOrders: async (filters: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const where: any = { type: "pre_order" };
+
+    if (filters.status && filters.status !== "all") {
+      where.status = filters.status;
+    }
+
+    if (filters.startDate || filters.endDate) {
+      where.deliveryDate = {};
+      if (filters.startDate)
+        where.deliveryDate.gte = new Date(filters.startDate);
+      if (filters.endDate) {
+        const end = new Date(filters.endDate);
+        end.setHours(23, 59, 59, 999);
+        where.deliveryDate.lte = end;
+      }
+    }
+
+    return db.bill.findMany({
+      where,
+      include: {
+        cashier: { select: { id: true, name: true } },
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            whatsappNumber: true,
+          },
+        },
+        lines: {
+          include: {
+            item: {
+              select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+                marketPrice: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { deliveryDate: "asc" },
+    });
+  },
+
+  getUpcomingPreOrders: async () => {
+    const now = new Date();
+    const threeDaysLater = new Date();
+    threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+
+    return db.bill.findMany({
+      where: {
+        type: "pre_order",
+        status: { in: ["pending", "confirmed", "ready"] },
+        deliveryDate: {
+          gte: now,
+          lte: threeDaysLater,
+        },
+      },
+      include: {
+        customer: { select: { name: true, phone: true, whatsappNumber: true } },
+      },
+      orderBy: { deliveryDate: "asc" },
+    });
+  },
+
+  updatePreOrderStatus: async (id: string, status: string) => {
+    return db.bill.update({
+      where: { id },
+      data: { status },
+      include: {
+        customer: {
+          select: { id: true, name: true, phone: true, whatsappNumber: true },
+        },
+        lines: {
+          include: { item: { select: { name: true, marketPrice: true } } },
+        },
+        cashier: { select: { name: true } },
+      },
+    });
+  },
+
+  recordBalancePayment: async (
+    id: string,
+    amount: number,
+    paymentMethod: string,
+    note?: string,
+  ) => {
+    const bill = await db.bill.findUnique({ where: { id } });
+    if (!bill) throw new Error("Bill not found");
+
+    const newAdvance = (bill.advancePayment || 0) + amount;
+
+    return db.bill.update({
+      where: { id },
+      data: {
+        advancePayment: newAdvance,
+        note: note
+          ? `${bill.note || ""} | Payment: Rs.${amount} (${paymentMethod}) - ${note}`
+          : bill.note,
+      },
+      include: {
+        customer: {
+          select: { id: true, name: true, phone: true, whatsappNumber: true },
+        },
+        lines: {
+          include: { item: { select: { name: true, marketPrice: true } } },
+        },
+        cashier: { select: { name: true } },
+      },
+    });
   },
 };

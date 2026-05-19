@@ -1,6 +1,7 @@
 {
   "name": "pinklet-pos",
   "private": true,
+  "packageManager": "pnpm@11.0.8",
   "scripts": {
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",

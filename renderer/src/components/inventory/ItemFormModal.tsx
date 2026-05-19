@@ -94,8 +94,18 @@ function QuickAddSupplier({
   onAdded: (supplier: Supplier) => void
 }) {
   const [form, setForm] = useState({
-    name: '', phone: '', email: '', address: '', marketPrice: '',
-    initialDiscount: '',
+    name: '',
+    barcode: '',
+    categoryId: '',
+    newCategory: '',
+    supplierId: '',
+    marketPrice: '',      // ← ADD
+    buyingPrice: '',
+    sellingPrice: '',
+    stock: '',
+    lowStockAlert: '10',
+    imagePreview: '',
+    imageBase64: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -301,6 +311,7 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
         barcode: form.barcode.trim() || undefined,
         categoryId: categoryId || undefined,
         supplierId: form.supplierId || undefined,
+        marketPrice: form.marketPrice ? parseFloat(form.marketPrice) : undefined,  // ← ADD
         buyingPrice: parseFloat(form.buyingPrice),
         sellingPrice: parseFloat(form.sellingPrice),
         stock: isEdit ? undefined : parseInt(form.stock),
@@ -532,60 +543,65 @@ export default function ItemFormModal({ item, onClose, onSaved }: Props) {
               </div>
             </div>
 
-            {/* Market Price + Initial Discount */}
-            <div style={{ backgroundColor: 'rgba(59,59,152,0.04)', border: '1px solid rgba(59,59,152,0.12)', borderRadius: '14px', padding: '14px', marginBottom: '12px' }}>
-              <p style={{ margin: '0 0 12px', fontSize: '12px', fontWeight: 700, color: '#3B3B98' }}>
-                🏷 Market Price & Initial Discount (optional)
-              </p>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Market Price (Rs.)</label>
-                  <div style={inputRow}>
-                    <div style={inputInner}>
-                      <span style={{ fontSize: '13px', color: 'rgba(9,9,9,0.35)', fontWeight: 600 }}>Rs.</span>
-                      <input
-                        type="number"
-                        value={form.marketPrice || ''}
-                        onChange={(e) => set('marketPrice', e.target.value)}
-                        placeholder="Market rate"
-                        style={inputStyle}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Initial Discount (Rs.)</label>
-                  <div style={inputRow}>
-                    <div style={inputInner}>
-                      <span style={{ fontSize: '13px', color: 'rgba(9,9,9,0.35)', fontWeight: 600 }}>Rs.</span>
-                      <input
-                        type="number"
-                        value={form.initialDiscount || ''}
-                        onChange={(e) => set('initialDiscount', e.target.value)}
-                        placeholder="0.00"
-                        style={inputStyle}
-                      />
-                    </div>
+            {/* Market Price */}
+            <label style={labelStyle}>Market Price (Rs.) — What others charge</label>
+            <div style={inputRow}>
+              <div style={inputInner}>
+                <span style={{ fontSize: '13px', color: 'rgba(9,9,9,0.35)', fontWeight: 600 }}>Rs.</span>
+                <input
+                  type="number"
+                  value={form.marketPrice}
+                  onChange={(e) => set('marketPrice', e.target.value)}
+                  placeholder="0.00 (optional)"
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+
+            {/* Prices row */}
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>Cost Price (Rs.) *</label>
+                <div style={inputRow}>
+                  <div style={inputInner}>
+                    <span style={{ fontSize: '13px', color: 'rgba(9,9,9,0.35)', fontWeight: 600 }}>Rs.</span>
+                    <input type="number" value={form.buyingPrice} onChange={(e) => set('buyingPrice', e.target.value)} placeholder="0.00" style={inputStyle} />
                   </div>
                 </div>
               </div>
-              {form.marketPrice && form.sellingPrice && (
-                <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#22c55e', fontWeight: 500 }}>
-                  Customer saves Rs. {(parseFloat(form.marketPrice) - parseFloat(form.sellingPrice || '0')).toFixed(2)} vs market price
-                </p>
-              )}
+              <div style={{ flex: 1 }}>
+                <label style={labelStyle}>Selling Price (Rs.) *</label>
+                <div style={inputRow}>
+                  <div style={inputInner}>
+                    <span style={{ fontSize: '13px', color: 'rgba(9,9,9,0.35)', fontWeight: 600 }}>Rs.</span>
+                    <input type="number" value={form.sellingPrice} onChange={(e) => set('sellingPrice', e.target.value)} placeholder="0.00" style={inputStyle} />
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Profit preview */}
             {sellingPrice > 0 && buyingPrice > 0 && (
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', marginTop: '-4px' }}>
-                <div style={{ flex: 1, backgroundColor: 'rgba(34,197,94,0.08)', borderRadius: '10px', padding: '8px 14px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '12px', color: 'rgba(9,9,9,0.50)' }}>Profit per item</span>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: profit >= 0 ? '#15803d' : '#dc2626' }}>Rs. {profit.toFixed(2)}</span>
-                </div>
-                <div style={{ flex: 1, backgroundColor: 'rgba(34,197,94,0.08)', borderRadius: '10px', padding: '8px 14px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '12px', color: 'rgba(9,9,9,0.50)' }}>Margin</span>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#15803d' }}>{margin}%</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px', marginTop: '-4px' }}>
+                {/* Market vs selling price */}
+                {parseFloat(form.marketPrice || '0') > 0 && (
+                  <div style={{ backgroundColor: 'rgba(59,59,152,0.06)', borderRadius: '10px', padding: '8px 14px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '12px', color: 'rgba(9,9,9,0.50)' }}>Initial discount (vs market)</span>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#3B3B98' }}>
+                      Rs. {(parseFloat(form.marketPrice) - sellingPrice).toFixed(2)} off
+                      {' '}({(((parseFloat(form.marketPrice) - sellingPrice) / parseFloat(form.marketPrice)) * 100).toFixed(0)}%)
+                    </span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ flex: 1, backgroundColor: 'rgba(34,197,94,0.08)', borderRadius: '10px', padding: '8px 14px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '12px', color: 'rgba(9,9,9,0.50)' }}>Profit per item</span>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: profit >= 0 ? '#15803d' : '#dc2626' }}>Rs. {profit.toFixed(2)}</span>
+                  </div>
+                  <div style={{ flex: 1, backgroundColor: 'rgba(34,197,94,0.08)', borderRadius: '10px', padding: '8px 14px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '12px', color: 'rgba(9,9,9,0.50)' }}>Margin</span>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#15803d' }}>{margin}%</span>
+                  </div>
                 </div>
               </div>
             )}

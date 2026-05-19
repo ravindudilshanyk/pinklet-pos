@@ -15,6 +15,7 @@ import Settings from "@/pages/Settings";
 import PasswordLogin from "./pages/auth/PasswordLogin";
 import OwnerLogin from "@/pages/auth/OwnerLogin";
 import AppShell from "@/components/layout/AppShell";
+import PreOrders from '@/pages/PreOrders'
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ function AppRoutes() {
       <Route element={<AppShell />}>
         <Route path="/" element={<Overview />} />
         <Route path="/bill" element={<MakeBill />} />
+        <Route path="/pre-orders" element={<PreOrders />} />
         <Route path="/items" element={<Items />} />
         <Route path="/sales" element={<SalesHistory />} />
         <Route path="/reports" element={<Reports />} />

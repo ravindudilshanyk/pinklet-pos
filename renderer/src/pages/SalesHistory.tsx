@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { salesService } from '@/services/sales.service'
+import { printReceipt, shareReceiptWhatsApp } from '@/utils/receipt'
 
 export default function SalesHistory() {
   const [startDate, setStartDate] = useState(
@@ -440,23 +441,12 @@ function SaleRow({ bill, isLast, onClick }: { bill: any; isLast: boolean; onClic
 function BillDetailModal({ bill, onClose }: { bill: any; onClose: () => void }) {
   const profit = bill.lines.reduce((sum: number, l: any) => sum + l.profit, 0)
 
+  const handlePrint = () => {
+    printReceipt(bill, bill.customer, 0)
+  }
+
   const handleWhatsApp = () => {
-    const number = bill.customer?.whatsappNumber || bill.customer?.phone
-    if (!number) return alert('No WhatsApp number for this customer')
-    const items = bill.lines.map((l: any) =>
-      `• ${l.item.name} ×${l.quantity} — Rs. ${l.lineTotal.toFixed(2)}`
-    ).join('\n')
-    const message = encodeURIComponent(
-      `🛍 *Pinklet POS - Receipt*\n` +
-      `━━━━━━━━━━━━━━━━\n` +
-      `📅 ${new Date(bill.createdAt).toLocaleDateString()}\n` +
-      `🧾 ${bill.billNumber}\n\n` +
-      `*Items:*\n${items}\n\n` +
-      `━━━━━━━━━━━━━━━━\n` +
-      `*Total: Rs. ${bill.total.toFixed(2)}*\n\n` +
-      `Thank you! 🎀`
-    )
-    window.open(`https://wa.me/${number}?text=${message}`, '_blank')
+    shareReceiptWhatsApp(bill, bill.customer, 0)
   }
 
   return (
@@ -563,17 +553,17 @@ function BillDetailModal({ bill, onClose }: { bill: any; onClose: () => void }) 
         {/* Footer actions */}
         <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(9,9,9,0.06)', display: 'flex', gap: '10px', flexShrink: 0 }}>
           <button
-            onClick={() => window.print()}
+            onClick={handlePrint}
             style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid rgba(238,45,124,0.25)', backgroundColor: 'rgba(238,45,124,0.06)', color: '#EE2D7C', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
           >
-            🖨 Print
+            🖨 Print PDF
           </button>
           {bill.customer && (
             <button
               onClick={handleWhatsApp}
               style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', backgroundColor: '#25D366', color: 'white', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
             >
-              💬 WhatsApp
+              💬 WhatsApp PDF
             </button>
           )}
           <button

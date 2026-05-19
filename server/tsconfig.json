@@ -4,8 +4,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "module": "CommonJS",
-    "esModuleInterop": true,
-    "ignoreDeprecations": "6.0"
+    "esModuleInterop": true
   },
   "include": ["src", "../renderer/src/services/customer.service.js"],
   "ts-node": {

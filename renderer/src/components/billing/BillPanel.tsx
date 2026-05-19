@@ -25,6 +25,7 @@ export default function BillPanel() {
   const [showCustomer, setShowCustomer] = useState(false)
   const [showPreOrder, setShowPreOrder] = useState(false)
   const [showForceCustomer, setShowForceCustomer] = useState(false)
+  const [pendingPayment, setPendingPayment] = useState(false)
 
   const subtotal = getSubtotal()
   const discount = getTotalDiscount()
@@ -35,6 +36,18 @@ export default function BillPanel() {
 
   const advancePaid = parseFloat(preOrder.advancePayment || '0')
   const balance = total - advancePaid
+
+  const handleCustomerSearchClose = () => {
+    setShowCustomer(false)
+    if (pendingPayment) {
+      setPendingPayment(false)
+      if (activeTab === 'pre_order') {
+        setShowPreOrder(true)
+      } else {
+        setShowPayment(true)
+      }
+    }
+  }
 
   return (
     <div style={{
@@ -192,7 +205,8 @@ export default function BillPanel() {
         <button
           onClick={() => {
             if (!customer) {
-              setShowForceCustomer(true)
+              setPendingPayment(true)
+              setShowCustomer(true)
               return
             }
             if (activeTab === 'pre_order') {
@@ -210,7 +224,9 @@ export default function BillPanel() {
             fontFamily: 'Inter, sans-serif', transition: 'background-color 0.2s',
           }}
         >
-          Proceed Bill (F12)
+          {items.length > 0 ? (
+            !customer ? 'Link Customer + Proceed (F12)' : 'Proceed Bill (F12)'
+          ) : 'Add Items First'}
         </button>
       </div>
 
@@ -226,7 +242,7 @@ export default function BillPanel() {
       )}
       {showPayment && <PaymentModal onClose={() => setShowPayment(false)} />}
       {showHold && <HoldBillDrawer onClose={() => setShowHold(false)} />}
-      {showCustomer && <CustomerSearch onClose={() => setShowCustomer(false)} />}
+      {showCustomer && <CustomerSearch onClose={() => { handleCustomerSearchClose() }} />}
 
       {showForceCustomer && (
         <ForceCustomerModal

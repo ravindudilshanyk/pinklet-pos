@@ -13,6 +13,7 @@ export interface BillItem {
   name: string;
   unitPrice: number;
   buyingPrice: number;
+  marketPrice?: number; // ← ADD
   quantity: number;
   stock: number;
   discount?: Discount;
