@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { settingsService } from '@/services/settings.service'
+import { settingsService } from '@/services/Settings.service'
 import { useAuthStore } from '@/stores/authStore'
+import { useNavigate } from 'react-router-dom'
 
 type Tab = 'general' | 'cashiers' | 'discounts' | 'billing'
 
@@ -15,6 +16,7 @@ export default function Settings() {
     { key: 'cashiers', label: 'Cashier Accounts', icon: '👤' },
     { key: 'discounts', label: 'Discount Presets', icon: '🏷' },
     { key: 'billing', label: 'Billing', icon: '🧾' },
+    { key: 'security', label: 'Security', icon: '🔒' },
   ]
 
   return (
@@ -59,6 +61,7 @@ export default function Settings() {
           {activeTab === 'cashiers' && <CashierSettings isOwner={isOwner} />}
           {activeTab === 'discounts' && <DiscountSettings isOwner={isOwner} />}
           {activeTab === 'billing' && <BillingSettings isOwner={isOwner} />}
+          {activeTab === 'security' && <SecuritySettings isOwner={isOwner} />}
         </div>
       </div>
     </div>
@@ -141,6 +144,8 @@ function GeneralSettings({ isOwner }: { isOwner: boolean }) {
       setLoading(false)
     }
   }
+
+
 
   return (
     <>
@@ -562,16 +567,75 @@ function BillingSettings({ isOwner }: { isOwner: boolean }) {
   })
   const queryClient = useQueryClient()
 
+  const defaultLayout = {
+    pageWidthMm: 80,
+    pagePaddingMm: 6,
+    fontSize: 10,
+    headerTitle: '',
+    headerSubtitle: 'Thank you for shopping',
+    headerMeta: '',
+    footerText: '',
+    showShopAddress: true,
+    showShopPhone: true,
+    showShopEmail: false,
+    showCustomer: true,
+    showCashier: true,
+    showBillType: true,
+    showStatus: true,
+    showOrderDates: true,
+    showAdvancePayment: true,
+    showDiscountColumn: true,
+    showTaxRow: true,
+    showLoyaltyUsed: true,
+    showPaymentDetails: true,
+    showSavings: true,
+    showCoinsEarned: true,
+    showNote: true,
+  }
+
   const [form, setForm] = useState({
     receiptFooter: settings?.receiptFooter || 'Thank you for shopping with us! 🎀',
+    receiptLayout: {
+      ...defaultLayout,
+      ...(settings?.receiptLayout || {}),
+    },
   })
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    if (!settings) return
+    setForm({
+      receiptFooter: settings.receiptFooter || 'Thank you for shopping with us! 🎀',
+      receiptLayout: {
+        ...defaultLayout,
+        ...(settings.receiptLayout || {}),
+      },
+    })
+  }, [settings])
+
+  const setLayout = (key: keyof typeof form.receiptLayout, value: string | number | boolean) => {
+    setForm((f) => ({
+      ...f,
+      receiptLayout: {
+        ...f.receiptLayout,
+        [key]: value,
+      },
+    }))
+  }
+
   const handleSave = async () => {
     try {
       setLoading(true)
-      await settingsService.updateShopSettings(form)
+      await settingsService.updateShopSettings({
+        receiptFooter: form.receiptFooter,
+        receiptLayout: {
+          ...form.receiptLayout,
+          pageWidthMm: Number(form.receiptLayout.pageWidthMm || 80),
+          pagePaddingMm: Number(form.receiptLayout.pagePaddingMm || 6),
+          fontSize: Number(form.receiptLayout.fontSize || 10),
+        },
+      })
       queryClient.invalidateQueries({ queryKey: ['shop-settings'] })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -582,6 +646,138 @@ function BillingSettings({ isOwner }: { isOwner: boolean }) {
 
   return (
     <Section title="Billing & Receipt" description="Configure receipt and billing options">
+
+      <div style={{ backgroundColor: 'rgba(238,45,124,0.04)', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+        <p style={{ margin: '0 0 6px', fontSize: '12px', fontWeight: 700, color: 'rgba(9,9,9,0.60)' }}>
+          Owner Receipt Layout Controls
+        </p>
+        <p style={{ margin: 0, fontSize: '12px', color: 'rgba(9,9,9,0.45)' }}>
+          These settings now control both Print and Downloaded PDF bill layouts.
+        </p>
+      </div>
+
+      <Section title="Print Page Size" description="Choose receipt width, spacing, and font size">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Page Width (mm)</label>
+            <input
+              type="number"
+              min={58}
+              max={120}
+              value={form.receiptLayout.pageWidthMm}
+              onChange={(e) => setLayout('pageWidthMm', Number(e.target.value))}
+              style={inputStyle}
+              disabled={!isOwner}
+            />
+          </div>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Page Padding (mm)</label>
+            <input
+              type="number"
+              min={2}
+              max={16}
+              value={form.receiptLayout.pagePaddingMm}
+              onChange={(e) => setLayout('pagePaddingMm', Number(e.target.value))}
+              style={inputStyle}
+              disabled={!isOwner}
+            />
+          </div>
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Base Font Size (px)</label>
+            <input
+              type="number"
+              min={8}
+              max={14}
+              value={form.receiptLayout.fontSize}
+              onChange={(e) => setLayout('fontSize', Number(e.target.value))}
+              style={inputStyle}
+              disabled={!isOwner}
+            />
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Header & Footer" description="Customize top and bottom text on bill printouts">
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Header Title (leave empty to use Shop Name)</label>
+          <input
+            value={form.receiptLayout.headerTitle}
+            onChange={(e) => setLayout('headerTitle', e.target.value)}
+            style={inputStyle}
+            disabled={!isOwner}
+            placeholder="Pinklet POS"
+          />
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Header Subtitle</label>
+          <input
+            value={form.receiptLayout.headerSubtitle}
+            onChange={(e) => setLayout('headerSubtitle', e.target.value)}
+            style={inputStyle}
+            disabled={!isOwner}
+            placeholder="Thank you for shopping"
+          />
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Header Extra Line</label>
+          <input
+            value={form.receiptLayout.headerMeta}
+            onChange={(e) => setLayout('headerMeta', e.target.value)}
+            style={inputStyle}
+            disabled={!isOwner}
+            placeholder="Open daily 8:00 AM - 9:00 PM"
+          />
+        </div>
+
+        <div style={fieldStyle}>
+          <label style={labelStyle}>Footer Text</label>
+          <textarea
+            value={form.receiptLayout.footerText}
+            onChange={(e) => setLayout('footerText', e.target.value)}
+            disabled={!isOwner}
+            rows={2}
+            style={{ ...inputStyle, height: 'auto', padding: '12px 14px', resize: 'none', lineHeight: 1.5 }}
+            placeholder="Thanks for visiting Pinklet"
+          />
+        </div>
+      </Section>
+
+      <Section title="Visible Rows & Sections" description="Choose which rows are visible on receipt layouts">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 18px' }}>
+          {[
+            ['showShopPhone', 'Show Shop Phone'],
+            ['showShopAddress', 'Show Shop Address'],
+            ['showShopEmail', 'Show Shop Email'],
+            ['showCustomer', 'Show Customer Row'],
+            ['showCashier', 'Show Cashier Row'],
+            ['showBillType', 'Show Bill Type Row'],
+            ['showStatus', 'Show Status Row'],
+            ['showOrderDates', 'Show Pre-order Dates'],
+            ['showAdvancePayment', 'Show Advance Payment Row'],
+            ['showDiscountColumn', 'Show Discount Column in Items'],
+            ['showTaxRow', 'Show Tax Row'],
+            ['showLoyaltyUsed', 'Show Loyalty Used Row'],
+            ['showPaymentDetails', 'Show Payment Details'],
+            ['showSavings', 'Show Savings Box'],
+            ['showCoinsEarned', 'Show Coins Earned Box'],
+            ['showNote', 'Show Bill Note'],
+          ].map(([key, label]) => (
+            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#090909' }}>
+              <input
+                type="checkbox"
+                checked={Boolean((form.receiptLayout as any)[key])}
+                onChange={(e) => setLayout(key as keyof typeof form.receiptLayout, e.target.checked)}
+                disabled={!isOwner}
+                style={{ width: '16px', height: '16px', accentColor: '#EE2D7C' }}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+      </Section>
+
       <div style={fieldStyle}>
         <label style={labelStyle}>Receipt Footer Message</label>
         <textarea
@@ -597,13 +793,16 @@ function BillingSettings({ isOwner }: { isOwner: boolean }) {
       <div style={{ backgroundColor: 'rgba(238,45,124,0.04)', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
         <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 700, color: 'rgba(9,9,9,0.50)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Receipt Preview</p>
         <div style={{ backgroundColor: 'white', borderRadius: '8px', padding: '16px', fontSize: '12px', color: '#090909', lineHeight: 1.8, fontFamily: 'monospace' }}>
-          <p style={{ margin: 0, fontWeight: 700, textAlign: 'center' }}>🎀 {settings?.shopName || 'Pinklet POS'}</p>
-          <p style={{ margin: 0, textAlign: 'center', color: 'rgba(9,9,9,0.50)' }}>{settings?.shopPhone || ''}</p>
+          <p style={{ margin: 0, fontWeight: 700, textAlign: 'center' }}>{form.receiptLayout.headerTitle || settings?.shopName || 'Pinklet POS'}</p>
+          <p style={{ margin: 0, textAlign: 'center', color: 'rgba(9,9,9,0.50)' }}>{form.receiptLayout.headerSubtitle}</p>
+          {form.receiptLayout.showShopPhone && <p style={{ margin: 0, textAlign: 'center', color: 'rgba(9,9,9,0.50)' }}>{settings?.shopPhone || ''}</p>}
           <p style={{ margin: '8px 0', borderTop: '1px dashed rgba(9,9,9,0.15)', borderBottom: '1px dashed rgba(9,9,9,0.15)', padding: '6px 0', textAlign: 'center', color: 'rgba(9,9,9,0.50)' }}>RECEIPT</p>
           <p style={{ margin: 0 }}>Item 1 × 2 .............. Rs. 600</p>
           <p style={{ margin: 0 }}>Item 2 × 1 .............. Rs. 350</p>
+          {form.receiptLayout.showDiscountColumn && <p style={{ margin: 0, color: '#dc2626' }}>Discount ............... -Rs. 50</p>}
           <p style={{ margin: '6px 0 0', borderTop: '1px solid rgba(9,9,9,0.10)', paddingTop: '6px', fontWeight: 700 }}>Total .................. Rs. 950</p>
-          <p style={{ margin: '8px 0 0', textAlign: 'center', color: 'rgba(9,9,9,0.50)', fontStyle: 'italic' }}>{form.receiptFooter}</p>
+          {form.receiptLayout.footerText && <p style={{ margin: '8px 0 0', textAlign: 'center', color: 'rgba(9,9,9,0.50)', fontStyle: 'italic' }}>{form.receiptLayout.footerText}</p>}
+          <p style={{ margin: '4px 0 0', textAlign: 'center', color: 'rgba(9,9,9,0.50)', fontStyle: 'italic' }}>{form.receiptFooter}</p>
         </div>
       </div>
 
@@ -616,6 +815,54 @@ function BillingSettings({ isOwner }: { isOwner: boolean }) {
           {saved ? '✓ Saved!' : loading ? 'Saving...' : 'Save Settings'}
         </button>
       )}
+    </Section>
+  )
+}
+
+function SecuritySettings() {
+  const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+
+  return (
+    <Section title="Security & Password" description="Manage your account security">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+        {/* Current user info */}
+        <div style={{ backgroundColor: 'rgba(238,45,124,0.04)', borderRadius: '12px', padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'rgba(238,45,124,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 700, color: '#EE2D7C' }}>
+            {user?.name?.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#090909' }}>{user?.name}</p>
+            <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'rgba(9,9,9,0.45)', textTransform: 'capitalize' }}>{user?.role} account</p>
+          </div>
+        </div>
+
+        {/* Change password button */}
+        <button
+          onClick={() => navigate('/change-password')}
+          style={{
+            padding: '14px 18px', borderRadius: '12px',
+            border: '1px solid rgba(238,45,124,0.20)',
+            backgroundColor: 'white', color: '#EE2D7C',
+            fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'Inter, sans-serif', textAlign: 'left',
+            display: 'flex', alignItems: 'center', gap: '10px',
+          }}
+        >
+          <span style={{ fontSize: '18px' }}>🔑</span>
+          <div>
+            <p style={{ margin: 0, fontSize: '14px', fontWeight: 600 }}>Change Password</p>
+            <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'rgba(9,9,9,0.45)', fontWeight: 400 }}>Verify with email OTP</p>
+          </div>
+        </button>
+
+        <div style={{ backgroundColor: 'rgba(245,158,11,0.06)', borderRadius: '12px', padding: '12px 16px' }}>
+          <p style={{ margin: 0, fontSize: '12px', color: '#92400e', lineHeight: 1.5 }}>
+            ⚠ <strong>Cashiers:</strong> You need an email linked to your account to change your password. Ask the owner to add your email in Settings → Cashier Accounts.
+          </p>
+        </div>
+      </div>
     </Section>
   )
 }

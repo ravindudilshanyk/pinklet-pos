@@ -18,6 +18,15 @@ model User {
   bills     Bill[]
 }
 
+model OwnerSetup {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  otp       String
+  verified  Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
 model Supplier {
   id        String   @id @default(cuid())
   name      String

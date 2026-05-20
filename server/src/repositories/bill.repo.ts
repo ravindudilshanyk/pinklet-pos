@@ -10,6 +10,7 @@ export const billRepo = {
     cashierId: string;
     customerId?: string;
     type: string;
+    status?: string;
     paymentMethod: string;
     subtotal: number;
     discountAmount: number;
@@ -44,6 +45,7 @@ export const billRepo = {
         cashierId: billData.cashierId,
         customerId: billData.customerId || null,
         type: billData.type,
+        status: billData.status || undefined,
         paymentMethod: billData.paymentMethod,
         subtotal: billData.subtotal,
         discountAmount: billData.discountAmount,

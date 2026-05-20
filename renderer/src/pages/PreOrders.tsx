@@ -534,27 +534,59 @@ function BalancePaymentModal({ order, onClose, onSaved }: {
     onSaved: (updated: any) => void
 }) {
     const balance = Math.max(0, order.total - (order.advancePayment || 0))
+    const [mode, setMode] = useState<'pay' | 'postpone'>('pay')
     const [amount, setAmount] = useState(String(balance.toFixed(2)))
     const [paymentMethod, setPaymentMethod] = useState('cash')
     const [note, setNote] = useState('')
+    const [postponeReason, setPostponeReason] = useState('')
+    const [postponeDate, setPostponeDate] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
-    const handleSave = async () => {
-        const amt = parseFloat(amount)
-        if (!amt || amt <= 0) return setError('Enter a valid amount')
-        if (amt > balance) return setError(`Amount cannot exceed balance of Rs. ${balance.toFixed(2)}`)
+    const POSTPONE_REASONS = [
+        'Customer requested more time',
+        'Financial difficulty — agreed new date',
+        'Partial payment received',
+        'Customer not available on required date',
+        'Order delivery rescheduled',
+        'Other reason',
+    ]
 
-        try {
-            setLoading(true)
-            const updated = await salesService.recordBalancePayment(
-                order.id, amt, paymentMethod, note
-            )
-            onSaved(updated)
-        } catch {
-            setError('Failed to record payment')
-        } finally {
-            setLoading(false)
+    const handleSave = async () => {
+        setError('')
+
+        if (mode === 'pay') {
+            const amt = parseFloat(amount)
+            if (!amt || amt <= 0) return setError('Enter a valid amount')
+            if (amt > balance) return setError(`Cannot exceed balance of Rs. ${balance.toFixed(2)}`)
+            try {
+                setLoading(true)
+                const updated = await salesService.recordBalancePayment(
+                    order.id, amt, paymentMethod, note
+                )
+                onSaved(updated)
+            } catch {
+                setError('Failed to record payment')
+            } finally {
+                setLoading(false)
+            }
+        } else {
+            // Postpone — record a note but don't change advance
+            if (!postponeReason) return setError('Please select a reason')
+            try {
+                setLoading(true)
+                const noteText = `POSTPONED: ${postponeReason}${postponeDate ? ` — New date: ${postponeDate}` : ''}${note ? ` — ${note}` : ''}`
+                // Record zero payment just to add the note
+                const updated = await salesService.recordBalancePayment(
+                    order.id, 0.001, paymentMethod,
+                    noteText
+                )
+                onSaved(updated)
+            } catch {
+                setError('Failed to record postponement')
+            } finally {
+                setLoading(false)
+            }
         }
     }
 
@@ -567,93 +599,219 @@ function BalancePaymentModal({ order, onClose, onSaved }: {
         }}>
             <div style={{
                 backgroundColor: 'white', borderRadius: '20px', width: '100%',
-                maxWidth: '400px', boxShadow: '0 8px 40px rgba(9,9,9,0.25)',
-                overflow: 'hidden',
+                maxWidth: '440px', maxHeight: '90vh',
+                display: 'flex', flexDirection: 'column',
+                boxShadow: '0 8px 40px rgba(9,9,9,0.25)', overflow: 'hidden',
             }}>
 
                 {/* Header */}
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(9,9,9,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(9,9,9,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                     <div>
-                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#090909' }}>Collect Balance Payment</h3>
-                        <p style={{ margin: '3px 0 0', fontSize: '12px', color: 'rgba(9,9,9,0.45)' }}>{order.billNumber} · {order.customer?.name || 'Walk-in'}</p>
+                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#090909' }}>
+                            Balance Payment
+                        </h3>
+                        <p style={{ margin: '3px 0 0', fontSize: '12px', color: 'rgba(9,9,9,0.45)' }}>
+                            {order.billNumber} · {order.customer?.name || 'Walk-in'} · Balance: Rs. {balance.toFixed(2)}
+                        </p>
                     </div>
                     <button onClick={onClose} style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', backgroundColor: 'rgba(9,9,9,0.06)', color: 'rgba(9,9,9,0.50)', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                 </div>
 
-                <div style={{ padding: '24px' }}>
+                <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
 
-                    {/* Balance info */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
-                        <div style={{ backgroundColor: 'rgba(9,9,9,0.04)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
-                            <p style={{ margin: '0 0 4px', fontSize: '11px', color: 'rgba(9,9,9,0.45)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Order Total</p>
-                            <p style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#090909' }}>Rs. {order.total.toFixed(2)}</p>
-                        </div>
-                        <div style={{ backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
-                            <p style={{ margin: '0 0 4px', fontSize: '11px', color: 'rgba(9,9,9,0.45)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Balance Due</p>
-                            <p style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#f59e0b' }}>Rs. {balance.toFixed(2)}</p>
-                        </div>
+                    {/* Mode toggle */}
+                    <div style={{ display: 'flex', backgroundColor: 'rgba(9,9,9,0.04)', borderRadius: '12px', padding: '4px', marginBottom: '20px' }}>
+                        <button
+                            onClick={() => setMode('pay')}
+                            style={{
+                                flex: 1, padding: '10px', borderRadius: '9px', border: 'none',
+                                backgroundColor: mode === 'pay' ? 'white' : 'transparent',
+                                color: mode === 'pay' ? '#22c55e' : 'rgba(9,9,9,0.45)',
+                                fontSize: '13px', fontWeight: mode === 'pay' ? 700 : 500,
+                                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                                boxShadow: mode === 'pay' ? '0 1px 4px rgba(9,9,9,0.10)' : 'none',
+                            }}
+                        >
+                            💰 Collect Payment
+                        </button>
+                        <button
+                            onClick={() => setMode('postpone')}
+                            style={{
+                                flex: 1, padding: '10px', borderRadius: '9px', border: 'none',
+                                backgroundColor: mode === 'postpone' ? 'white' : 'transparent',
+                                color: mode === 'postpone' ? '#f59e0b' : 'rgba(9,9,9,0.45)',
+                                fontSize: '13px', fontWeight: mode === 'postpone' ? 700 : 500,
+                                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                                boxShadow: mode === 'postpone' ? '0 1px 4px rgba(9,9,9,0.10)' : 'none',
+                            }}
+                        >
+                            📅 Postpone
+                        </button>
                     </div>
 
-                    {/* Amount input */}
-                    <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount Receiving</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'rgba(238,45,124,0.04)', border: '1px solid rgba(238,45,124,0.18)', borderRadius: '12px', height: '50px', padding: '0 16px', marginBottom: '12px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(9,9,9,0.40)' }}>Rs.</span>
-                        <input
-                            type="number"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            autoFocus
-                            style={{ flex: 1, border: 'none', outline: 'none', fontSize: '18px', fontWeight: 600, color: '#090909', fontFamily: 'Inter, sans-serif', backgroundColor: 'transparent' }}
-                        />
-                    </div>
+                    {mode === 'pay' ? (
+                        <>
+                            {/* Payment summary */}
+                            <div style={{ backgroundColor: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                    <span style={{ fontSize: '12px', color: 'rgba(9,9,9,0.50)' }}>Order Total</span>
+                                    <span style={{ fontSize: '12px', color: '#090909', fontWeight: 500 }}>Rs. {order.total.toFixed(2)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                    <span style={{ fontSize: '12px', color: 'rgba(9,9,9,0.50)' }}>Already Paid</span>
+                                    <span style={{ fontSize: '12px', color: '#22c55e', fontWeight: 500 }}>Rs. {(order.advancePayment || 0).toFixed(2)}</span>
+                                </div>
+                                <div style={{ borderTop: '1px solid rgba(34,197,94,0.15)', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#090909' }}>Balance Due</span>
+                                    <span style={{ fontSize: '15px', fontWeight: 800, color: '#f59e0b' }}>Rs. {balance.toFixed(2)}</span>
+                                </div>
+                            </div>
 
-                    {/* Payment method */}
-                    <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Payment Method</p>
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                        {(['cash', 'card', 'transfer'] as const).map((m) => (
-                            <button
-                                key={m}
-                                onClick={() => setPaymentMethod(m)}
-                                style={{
-                                    flex: 1, padding: '9px', borderRadius: '10px',
-                                    border: paymentMethod === m ? '2px solid #EE2D7C' : '1px solid rgba(9,9,9,0.12)',
-                                    backgroundColor: paymentMethod === m ? 'rgba(238,45,124,0.06)' : 'transparent',
-                                    color: paymentMethod === m ? '#EE2D7C' : 'rgba(9,9,9,0.50)',
-                                    fontSize: '12px', fontWeight: paymentMethod === m ? 600 : 500,
-                                    cursor: 'pointer', fontFamily: 'Inter, sans-serif', textTransform: 'capitalize',
-                                }}
+                            {/* Amount */}
+                            <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Amount Receiving
+                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'rgba(238,45,124,0.04)', border: '1px solid rgba(238,45,124,0.18)', borderRadius: '12px', height: '50px', padding: '0 16px', marginBottom: '10px' }}>
+                                <span style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(9,9,9,0.40)' }}>Rs.</span>
+                                <input
+                                    type="number"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    autoFocus
+                                    style={{ flex: 1, border: 'none', outline: 'none', fontSize: '18px', fontWeight: 600, color: '#090909', fontFamily: 'Inter, sans-serif', backgroundColor: 'transparent' }}
+                                />
+                            </div>
+
+                            {/* Quick amounts */}
+                            <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
+                                {[balance, balance / 2].filter(v => v > 0).map((amt, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setAmount(amt.toFixed(2))}
+                                        style={{
+                                            flex: 1, padding: '6px', borderRadius: '8px',
+                                            border: '1px solid rgba(238,45,124,0.20)',
+                                            backgroundColor: parseFloat(amount) === amt ? 'rgba(238,45,124,0.08)' : 'transparent',
+                                            color: '#EE2D7C', fontSize: '12px', fontWeight: 600,
+                                            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                                        }}
+                                    >
+                                        {i === 0 ? 'Full balance' : 'Half'} (Rs. {amt.toFixed(0)})
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Payment method */}
+                            <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Payment Method
+                            </p>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                                {(['cash', 'card', 'transfer'] as const).map((m) => (
+                                    <button
+                                        key={m}
+                                        onClick={() => setPaymentMethod(m)}
+                                        style={{
+                                            flex: 1, padding: '9px', borderRadius: '10px',
+                                            border: paymentMethod === m ? '2px solid #EE2D7C' : '1px solid rgba(9,9,9,0.12)',
+                                            backgroundColor: paymentMethod === m ? 'rgba(238,45,124,0.06)' : 'transparent',
+                                            color: paymentMethod === m ? '#EE2D7C' : 'rgba(9,9,9,0.50)',
+                                            fontSize: '12px', fontWeight: paymentMethod === m ? 600 : 500,
+                                            cursor: 'pointer', fontFamily: 'Inter, sans-serif', textTransform: 'capitalize',
+                                        }}
+                                    >
+                                        {m === 'cash' ? '💵' : m === 'card' ? '💳' : '🔄'} {m}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Note */}
+                            <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Note (optional)
+                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(238,45,124,0.04)', border: '1px solid rgba(238,45,124,0.18)', borderRadius: '12px', height: '44px', padding: '0 14px', marginBottom: '4px' }}>
+                                <input
+                                    type="text"
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                    placeholder="e.g. Final payment on delivery"
+                                    style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13px', color: '#090909', fontFamily: 'Inter, sans-serif', backgroundColor: 'transparent' }}
+                                />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            {/* Postpone mode */}
+                            <div style={{ backgroundColor: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.20)', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
+                                <p style={{ margin: 0, fontSize: '13px', color: '#92400e', lineHeight: 1.5 }}>
+                                    📅 Record that the customer needs more time to pay. The balance of <strong>Rs. {balance.toFixed(2)}</strong> will still be tracked and shown as outstanding.
+                                </p>
+                            </div>
+
+                            {/* Reason */}
+                            <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Reason *
+                            </p>
+                            <select
+                                value={postponeReason}
+                                onChange={(e) => setPostponeReason(e.target.value)}
+                                style={{ width: '100%', height: '46px', padding: '0 14px', borderRadius: '12px', border: '1px solid rgba(238,45,124,0.18)', backgroundColor: 'rgba(238,45,124,0.03)', fontSize: '13px', color: '#090909', fontFamily: 'Inter, sans-serif', outline: 'none', marginBottom: '12px', cursor: 'pointer', boxSizing: 'border-box' }}
                             >
-                                {m === 'cash' ? '💵' : m === 'card' ? '💳' : '🔄'} {m}
-                            </button>
-                        ))}
-                    </div>
+                                <option value="">Select reason...</option>
+                                {POSTPONE_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                            </select>
 
-                    {/* Note */}
-                    <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Note (optional)</p>
-                    <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(238,45,124,0.04)', border: '1px solid rgba(238,45,124,0.18)', borderRadius: '12px', height: '46px', padding: '0 14px', marginBottom: '16px' }}>
-                        <input
-                            type="text"
-                            value={note}
-                            onChange={(e) => setNote(e.target.value)}
-                            placeholder="e.g. Final payment on delivery"
-                            style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13px', color: '#090909', fontFamily: 'Inter, sans-serif', backgroundColor: 'transparent' }}
-                        />
-                    </div>
+                            {/* New date */}
+                            <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Agreed New Payment Date (optional)
+                            </p>
+                            <input
+                                type="date"
+                                value={postponeDate}
+                                onChange={(e) => setPostponeDate(e.target.value)}
+                                min={new Date().toISOString().split('T')[0]}
+                                style={{ width: '100%', height: '46px', padding: '0 14px', borderRadius: '12px', border: '1px solid rgba(238,45,124,0.18)', backgroundColor: 'rgba(238,45,124,0.03)', fontSize: '13px', color: '#090909', fontFamily: 'Inter, sans-serif', outline: 'none', marginBottom: '12px', boxSizing: 'border-box' }}
+                            />
+
+                            {/* Additional note */}
+                            <p style={{ margin: '0 0 6px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Additional Notes
+                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'rgba(238,45,124,0.04)', border: '1px solid rgba(238,45,124,0.18)', borderRadius: '12px', height: '44px', padding: '0 14px', marginBottom: '4px' }}>
+                                <input
+                                    type="text"
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                    placeholder="Any additional context..."
+                                    style={{ flex: 1, border: 'none', outline: 'none', fontSize: '13px', color: '#090909', fontFamily: 'Inter, sans-serif', backgroundColor: 'transparent' }}
+                                />
+                            </div>
+                        </>
+                    )}
 
                     {error && (
-                        <div style={{ backgroundColor: '#fef2f2', color: '#dc2626', fontSize: '13px', padding: '8px 14px', borderRadius: '10px', marginBottom: '12px' }}>
+                        <div style={{ backgroundColor: '#fef2f2', color: '#dc2626', fontSize: '13px', padding: '8px 14px', borderRadius: '10px', marginTop: '10px' }}>
                             {error}
                         </div>
                     )}
+                </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={onClose} style={{ flex: 1, padding: '13px', borderRadius: '12px', border: '1px solid rgba(9,9,9,0.12)', backgroundColor: 'transparent', color: 'rgba(9,9,9,0.55)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
-                            Cancel
-                        </button>
-                        <button onClick={handleSave} disabled={loading} style={{ flex: 2, padding: '13px', borderRadius: '12px', border: 'none', backgroundColor: loading ? 'rgba(238,45,124,0.40)' : '#EE2D7C', color: 'white', fontSize: '14px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif' }}>
-                            {loading ? 'Recording...' : 'Record Payment'}
-                        </button>
-                    </div>
+                {/* Footer */}
+                <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(9,9,9,0.06)', display: 'flex', gap: '10px', flexShrink: 0 }}>
+                    <button onClick={onClose} style={{ flex: 1, padding: '13px', borderRadius: '12px', border: '1px solid rgba(9,9,9,0.12)', backgroundColor: 'transparent', color: 'rgba(9,9,9,0.55)', fontSize: '14px', fontWeight: 500, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={loading}
+                        style={{
+                            flex: 2, padding: '13px', borderRadius: '12px', border: 'none',
+                            backgroundColor: loading ? 'rgba(238,45,124,0.40)' : mode === 'pay' ? '#22c55e' : '#f59e0b',
+                            color: 'white', fontSize: '14px', fontWeight: 700,
+                            cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif',
+                        }}
+                    >
+                        {loading ? 'Saving...' : mode === 'pay' ? '✓ Record Payment' : '📅 Record Postponement'}
+                    </button>
                 </div>
             </div>
         </div>

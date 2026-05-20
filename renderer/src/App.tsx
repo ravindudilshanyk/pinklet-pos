@@ -16,6 +16,9 @@ import PasswordLogin from "./pages/auth/PasswordLogin";
 import OwnerLogin from "@/pages/auth/OwnerLogin";
 import AppShell from "@/components/layout/AppShell";
 import PreOrders from '@/pages/PreOrders'
+import ForgotPassword from '@/pages/auth/ForgotPassword'
+import ChangePassword from '@/pages/auth/ChangePassword'
+import { AuthGuard } from "./router/guards";
 
 const queryClient = new QueryClient();
 
@@ -49,10 +52,13 @@ function AppRoutes() {
   if (!isAuthenticated) {
     return (
       <Routes>
-        <Route path="/auth" element={<AccountSelect />} />
-        <Route path="/auth/login" element={<PasswordLogin />} />
-        <Route path="/auth/owner-login" element={<OwnerLogin />} />
-        <Route path="*" element={<Navigate to="/auth" replace />} />
+        <AuthGuard>
+          <Route path="/auth" element={<AccountSelect />} />
+          <Route path="/auth/login" element={<PasswordLogin />} />
+          <Route path="/auth/owner-login" element={<OwnerLogin />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="*" element={<Navigate to="/auth" replace />} />
+        </AuthGuard>
       </Routes>
     );
   }
@@ -68,6 +74,8 @@ function AppRoutes() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/customers" element={<Customers />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/change-password" element={<ChangePassword />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

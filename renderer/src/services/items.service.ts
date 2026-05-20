@@ -46,4 +46,16 @@ export const itemsService = {
       .then((r) => r.data.data),
 
   getLowStock: () => api.get("/items/low-stock").then((r) => r.data.data),
+
+  getWasteLogs: () => api.get("/items/waste-logs").then((r) => r.data.data),
+
+  createWasteLog: (data: {
+    itemId: string;
+    quantity: number;
+    reason: string;
+    note?: string;
+  }) => api.post("/items/waste-logs", data).then((r) => r.data.data),
+
+  deleteWasteLog: (id: string) =>
+    api.delete(`/items/waste-logs/${id}`).then((r) => r.data.data),
 };

@@ -4,6 +4,7 @@ import { itemsService } from "@/services/items.service";
 import ItemFormModal from "@/components/inventory/ItemFormModal";
 import StockUpModal from "@/components/inventory/StockUpModal";
 import WasteModal from "@/components/inventory/WasteModal";
+import WasteLogModal from '@/components/inventory/WasteLogModal'
 
 type FilterType = "all" | "low_stock" | "out_of_stock";
 
@@ -47,6 +48,7 @@ export default function Items() {
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [stockUpItem, setStockUpItem] = useState<Item | null>(null);
   const [wasteItem, setWasteItem] = useState<Item | null>(null);
+  const [showWaste, setShowWaste] = useState(false)
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: [
@@ -174,6 +176,20 @@ export default function Items() {
             <path d="M12 5v14M5 12h14" />
           </svg>
           Add Item
+        </button>
+
+        <button
+          onClick={() => setShowWaste(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '10px 16px', borderRadius: '12px',
+            border: '1px solid rgba(239,68,68,0.25)',
+            backgroundColor: 'rgba(239,68,68,0.06)',
+            color: '#ef4444', fontSize: '13px', fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+          }}
+        >
+          🗑 Log Waste
         </button>
       </div>
 
@@ -493,7 +509,7 @@ export default function Items() {
                 }}
                 onDelete={() => handleDelete(item.id)}
                 onStockUp={() => setStockUpItem(item)}
-                onWaste={() => setWasteItem(item)}  
+                onWaste={() => setWasteItem(item)}
               />
             ))}
           </div>
@@ -524,6 +540,9 @@ export default function Items() {
           onClose={() => setWasteItem(null)}
           onSaved={refresh}
         />
+      )}
+      {showWaste && (
+        <WasteLogModal onClose={() => { setShowWaste(false); refresh() }} />
       )}
     </div>
   );

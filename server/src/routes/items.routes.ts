@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { itemsController } from "../controllers/items.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
+import { wasteController } from '../controllers/waste.controller'
 
 const router = Router();
 router.use(authMiddleware);
@@ -13,6 +14,9 @@ router.delete("/:id", itemsController.deleteItem);
 router.get("/barcode/:barcode", itemsController.getItemByBarcode);
 router.get("/low-stock", itemsController.getLowStock);
 router.post("/:id/adjust-stock", itemsController.adjustStock);
+router.get('/waste-logs', wasteController.getAll)
+router.post('/waste-logs', wasteController.create)
+router.delete('/waste-logs/:id', wasteController.delete)
 
 // Categories
 router.get("/categories", itemsController.getCategories);

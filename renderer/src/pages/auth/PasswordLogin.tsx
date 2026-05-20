@@ -29,8 +29,10 @@ export default function PasswordLogin() {
       });
       setAuth(result.user, result.token);
       navigate("/");
-    } catch (err: any) {
-      setError(err.response?.data?.error?.message || "Login failed");
+    } catch (err: unknown) {
+      type ErrWithResponse = { response?: { data?: { error?: { message?: string } } } };
+      const msg = ((err as ErrWithResponse)?.response?.data?.error?.message) ?? "Login failed";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -286,6 +288,47 @@ export default function PasswordLogin() {
               >
                 {loading ? "Logging in..." : "Login to the System"}
               </button>
+
+              {/* Forgot / Change password link */}
+              {account?.role === 'owner' && (
+                <button
+                  onClick={() => navigate('/forgot-password')}
+                  type="button"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#EE2D7C',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    marginTop: '8px',
+                    textDecoration: 'underline',
+                    padding: 0,
+                  }}
+                >
+                  Forgot password?
+                </button>
+              )}
+
+              {account?.role === 'cashier' && (
+                <button
+                  onClick={() => navigate('/forgot-password')}
+                  type="button"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#EE2D7C',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                    marginTop: '8px',
+                    textDecoration: 'underline',
+                    padding: 0,
+                  }}
+                >
+                  Forgot password?
+                </button>
+              )}
             </div>
           </div>
         </form>

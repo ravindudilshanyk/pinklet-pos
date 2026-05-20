@@ -15,6 +15,7 @@ export const billingService = {
     cashierId: string;
     customerId?: string;
     type: string;
+    status?: string;
     paymentMethod: string;
     items: {
       itemId: string;
@@ -34,10 +35,18 @@ export const billingService = {
     amountReceived: number;
     change: number;
     note?: string;
-    orderDate?: Date;
-    deliveryDate?: Date;
+    orderDate?: string | Date;
+    deliveryDate?: string | Date;
     advancePayment?: number;
   }) => {
+    const parseDate = (value?: string | Date) => {
+      if (!value) return undefined;
+      if (value instanceof Date) return value;
+
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+    };
+
     // Build lines with profit
     const lines = data.items.map((item) => ({
       itemId: item.itemId,
@@ -70,8 +79,9 @@ export const billingService = {
       amountReceived: data.amountReceived,
       change: data.change,
       note: data.note,
-      orderDate: data.orderDate,
-      deliveryDate: data.deliveryDate,
+      status: data.status,
+      orderDate: parseDate(data.orderDate),
+      deliveryDate: parseDate(data.deliveryDate),
       advancePayment: data.advancePayment,
       lines,
     });
