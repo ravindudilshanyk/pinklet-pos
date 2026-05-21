@@ -13,11 +13,14 @@ interface Props {
     imageUrl?: string
     category?: { name: string }
   }
+  selected?: boolean
+  onSelect?: () => void
 }
 
-export default function ItemCard({ item }: Props) {
+export default function ItemCard({ item, selected = false, onSelect }: Props) {
   const addItem = useBillingStore((s) => s.addItem)
   const billItems = useBillingStore((s) => s.items)
+  const setFocusItemId = useBillingStore((s) => s.setFocusItemId)
   const [clicked, setClicked] = useState(false)
 
   const inBill = billItems.find((i) => i.itemId === item.id)
@@ -42,6 +45,7 @@ export default function ItemCard({ item }: Props) {
       quantity: 1,
       stock: item.stock,
     })
+    setFocusItemId(item.id)
     setClicked(true)
     setTimeout(() => setClicked(false), 600)
   }
@@ -53,7 +57,10 @@ export default function ItemCard({ item }: Props) {
       overflow: 'hidden',
       border: inBill
         ? '2px solid #EE2D7C'
-        : '1px solid rgba(9,9,9,0.06)',
+        : selected
+          ? '2px solid #EE2D7C'
+          : '1px solid rgba(9,9,9,0.06)',
+      boxShadow: selected ? '0 0 0 3px rgba(238,45,124,0.12)' : 'none',
       transition: 'all 0.15s',
       opacity: isOutOfStock ? 0.6 : 1,
     }}>
@@ -141,7 +148,10 @@ export default function ItemCard({ item }: Props) {
         </div>
 
         <button
-          onClick={handleAdd}
+          onClick={() => {
+            if (onSelect) onSelect()
+            else handleAdd()
+          }}
           disabled={isOutOfStock}
           style={{
             width: '100%', padding: '6px 12px', borderRadius: '8px', border: 'none',

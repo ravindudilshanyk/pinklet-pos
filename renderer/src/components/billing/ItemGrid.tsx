@@ -3,9 +3,12 @@ import ItemCard from "./ItemCard";
 interface Props {
   items: any[];
   loading: boolean;
+  selectedItemIndex?: number;
+  onItemHover?: (index: number) => void;
+  onItemSelect?: (item: any) => void;
 }
 
-export default function ItemGrid({ items, loading }: Props) {
+export default function ItemGrid({ items, loading, selectedItemIndex = -1, onItemHover, onItemSelect }: Props) {
   if (loading) {
     return (
       <div
@@ -68,7 +71,12 @@ export default function ItemGrid({ items, loading }: Props) {
       }}
     >
       {items.map((item) => (
-        <ItemCard key={item.id} item={item} />
+        <ItemCard
+          key={item.id}
+          item={item}
+          selected={items.indexOf(item) === selectedItemIndex}
+          onSelect={() => onItemSelect?.(item)}
+        />
       ))}
     </div>
   );

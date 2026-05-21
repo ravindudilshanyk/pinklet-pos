@@ -4,7 +4,7 @@ import { settingsService } from '@/services/Settings.service'
 import { useAuthStore } from '@/stores/authStore'
 import { useNavigate } from 'react-router-dom'
 
-type Tab = 'general' | 'cashiers' | 'discounts' | 'billing'
+type Tab = 'general' | 'cashiers' | 'discounts' | 'security'
 
 export default function Settings() {
   const user = useAuthStore((s) => s.user)
@@ -15,7 +15,6 @@ export default function Settings() {
     { key: 'general', label: 'General', icon: '🏪' },
     { key: 'cashiers', label: 'Cashier Accounts', icon: '👤' },
     { key: 'discounts', label: 'Discount Presets', icon: '🏷' },
-    { key: 'billing', label: 'Billing', icon: '🧾' },
     { key: 'security', label: 'Security', icon: '🔒' },
   ]
 
@@ -60,7 +59,6 @@ export default function Settings() {
           {activeTab === 'general' && <GeneralSettings isOwner={isOwner} />}
           {activeTab === 'cashiers' && <CashierSettings isOwner={isOwner} />}
           {activeTab === 'discounts' && <DiscountSettings isOwner={isOwner} />}
-          {activeTab === 'billing' && <BillingSettings isOwner={isOwner} />}
           {activeTab === 'security' && <SecuritySettings isOwner={isOwner} />}
         </div>
       </div>

@@ -64,78 +64,127 @@ export const billingService = {
 
     const coinsEarned = Math.floor(data.total / COINS_PER_AMOUNT);
 
-    // Create bill with lines — never pass items to repo
-    const bill = await billRepo.create({
-      cashierId: data.cashierId,
-      customerId: data.customerId,
-      type: data.type,
-      paymentMethod: data.paymentMethod,
-      subtotal: data.subtotal,
-      discountAmount: data.discountAmount,
-      tax: data.tax,
-      loyaltyCoinsUsed: data.loyaltyCoinsUsed,
-      loyaltyCoinsEarned: coinsEarned,
-      total: data.total,
-      amountReceived: data.amountReceived,
-      change: data.change,
-      note: data.note,
-      status: data.status,
-      orderDate: parseDate(data.orderDate),
-      deliveryDate: parseDate(data.deliveryDate),
-      advancePayment: data.advancePayment,
-      lines,
+    // Run the whole sequence inside a transaction to ensure atomicity.
+    const result = await db.$transaction(async (tx) => {
+      // Generate bill number using the transactional client
+      const bills = await tx.bill.findMany({ select: { billNumber: true } });
+      const nextNumber = bills.reduce((highest, b) => {
+        const match = b.billNumber.match(/^POS-(\d+)$/);
+        if (!match) return highest;
+        const current = Number.parseInt(match[1], 10);
+        return Number.isNaN(current) ? highest : Math.max(highest, current);
+      }, 0);
+      const billNumber = `POS-${String(nextNumber + 1).padStart(4, "0")}`;
+
+      const billData = {
+        cashierId: data.cashierId,
+        customerId: data.customerId,
+        type: data.type,
+        paymentMethod: data.paymentMethod,
+        subtotal: data.subtotal,
+        discountAmount: data.discountAmount,
+        tax: data.tax,
+        loyaltyCoinsUsed: data.loyaltyCoinsUsed,
+        loyaltyCoinsEarned: coinsEarned,
+        total: data.total,
+        amountReceived: data.amountReceived,
+        change: data.change,
+        note: data.note,
+        status: data.status,
+        orderDate: parseDate(data.orderDate),
+        deliveryDate: parseDate(data.deliveryDate),
+        advancePayment: data.advancePayment,
+      };
+
+      const bill = await tx.bill.create({
+        data: {
+          billNumber,
+          ...billData,
+          customerId: billData.customerId || null,
+          status: billData.status || undefined,
+          note: billData.note || null,
+          orderDate: billData.orderDate || null,
+          deliveryDate: billData.deliveryDate || null,
+          advancePayment: billData.advancePayment || null,
+          lines: {
+            create: lines.map((l) => ({
+              itemId: l.itemId,
+              quantity: l.quantity,
+              unitPrice: l.unitPrice,
+              buyingPrice: l.buyingPrice,
+              discountAmount: l.discountAmount,
+              discountType: l.discountType || null,
+              discountValue: l.discountValue || null,
+              lineTotal: l.lineTotal,
+              profit: l.profit,
+            })),
+          },
+        },
+        include: { lines: { include: { item: true } }, customer: true, cashier: true },
+      });
+
+      // Deduct stock and create stock movements inside transaction
+      for (const item of data.items) {
+        try {
+          await tx.item.update({
+            where: { id: item.itemId },
+            data: { stock: { decrement: item.quantity } },
+          });
+          await tx.stockMovement.create({
+            data: {
+              itemId: item.itemId,
+              type: "sale",
+              quantity: -item.quantity,
+              billId: bill.id,
+              note: `Sold in ${bill.billNumber}`,
+            },
+          });
+        } catch {
+          // Skip if item not in inventory (custom items)
+        }
+      }
+
+      // Test hook: allows integration tests to force a failure after stock mutations.
+      if (process.env.BILLING_TEST_FAIL_AFTER_STOCK === "1") {
+        throw new Error("TEST_FAIL_AFTER_STOCK");
+      }
+
+      // Loyalty coins
+      if (data.customerId) {
+        if (data.loyaltyCoinsUsed > 0) {
+          await tx.customer.update({ where: { id: data.customerId }, data: { points: { increment: -data.loyaltyCoinsUsed } } });
+          await tx.loyaltyTransaction.create({
+            data: {
+              customerId: data.customerId,
+              type: "redeem",
+              coins: -data.loyaltyCoinsUsed,
+              billId: bill.id,
+              note: `Redeemed for ${bill.billNumber}`,
+            },
+          });
+        }
+
+        if (coinsEarned > 0) {
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + COIN_EXPIRY_DAYS);
+          await tx.customer.update({ where: { id: data.customerId }, data: { points: { increment: coinsEarned } } });
+          await tx.loyaltyTransaction.create({
+            data: {
+              customerId: data.customerId,
+              type: "earn",
+              coins: coinsEarned,
+              billId: bill.id,
+              note: `Earned from ${bill.billNumber}`,
+              expiresAt,
+            },
+          });
+        }
+      }
+
+      return { bill, coinsEarned };
     });
 
-    // Deduct stock
-    for (const item of data.items) {
-      try {
-        await itemRepo.updateStock(item.itemId, item.quantity);
-        await db.stockMovement.create({
-          data: {
-            itemId: item.itemId,
-            type: "sale",
-            quantity: -item.quantity,
-            billId: bill.id,
-            note: `Sold in ${bill.billNumber}`,
-          },
-        });
-      } catch {
-        // Skip if item not in inventory (custom items)
-      }
-    }
-
-    // Loyalty coins
-    if (data.customerId) {
-      if (data.loyaltyCoinsUsed > 0) {
-        await customerRepo.updatePoints(
-          data.customerId,
-          -data.loyaltyCoinsUsed,
-        );
-        await customerRepo.addLoyaltyTransaction({
-          customerId: data.customerId,
-          type: "redeem",
-          coins: -data.loyaltyCoinsUsed,
-          billId: bill.id,
-          note: `Redeemed for ${bill.billNumber}`,
-        });
-      }
-
-      if (coinsEarned > 0) {
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + COIN_EXPIRY_DAYS);
-        await customerRepo.updatePoints(data.customerId, coinsEarned);
-        await customerRepo.addLoyaltyTransaction({
-          customerId: data.customerId,
-          type: "earn",
-          coins: coinsEarned,
-          billId: bill.id,
-          note: `Earned from ${bill.billNumber}`,
-          expiresAt,
-        });
-      }
-    }
-
-    return { bill, coinsEarned };
+    return result;
   },
 
   holdBill: (data: { label?: string; billData: object }) => {

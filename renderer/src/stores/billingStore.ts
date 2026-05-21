@@ -35,6 +35,7 @@ interface BillingState {
   loyaltyCoinsToUse: number;
   note: string;
   activeTab: "quick_sale" | "pre_order";
+  focusItemId: string | null;
   preOrder: {
     orderDate: "";
     deliveryDate: "";
@@ -54,6 +55,7 @@ interface BillingState {
   setLoyaltyCoins: (coins: number) => void;
   setNote: (note: string) => void;
   setActiveTab: (tab: "quick_sale" | "pre_order") => void;
+  setFocusItemId: (itemId: string | null) => void;
   setPreOrder: (data: Partial<BillingState["preOrder"]>) => void;
   clearBill: () => void;
 
@@ -83,6 +85,7 @@ export const useBillingStore = create<BillingState>((set, get) => ({
   loyaltyCoinsToUse: 0,
   note: "",
   activeTab: "quick_sale",
+  focusItemId: null,
   preOrder: {
     orderDate: "",
     deliveryDate: "",
@@ -179,6 +182,7 @@ export const useBillingStore = create<BillingState>((set, get) => ({
   setLoyaltyCoins: (coins) => set({ loyaltyCoinsToUse: coins }),
   setNote: (note) => set({ note }),
   setActiveTab: (tab) => set({ activeTab: tab }),
+  setFocusItemId: (itemId) => set({ focusItemId: itemId }),
   setPreOrder: (data) => set((s) => ({ preOrder: { ...s.preOrder, ...data } })),
 
   clearBill: () =>
@@ -187,6 +191,7 @@ export const useBillingStore = create<BillingState>((set, get) => ({
       customer: null,
       loyaltyCoinsToUse: 0,
       note: "",
+      focusItemId: null,
       preOrder: {
         orderDate: "",
         deliveryDate: "",

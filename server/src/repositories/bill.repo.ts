@@ -2,8 +2,20 @@ import { db } from "../utils/db";
 
 export const billRepo = {
   generateBillNumber: async () => {
-    const count = await db.bill.count();
-    return `POS-${String(count + 1).padStart(4, "0")}`;
+    // Find the highest POS-#### bill number, regardless of insertion order.
+    const bills = await db.bill.findMany({
+      select: { billNumber: true },
+    });
+
+    const nextNumber = bills.reduce((highest, bill) => {
+      const match = bill.billNumber.match(/^POS-(\d+)$/);
+      if (!match) return highest;
+
+      const current = Number.parseInt(match[1], 10);
+      return Number.isNaN(current) ? highest : Math.max(highest, current);
+    }, 0);
+
+    return `POS-${String(nextNumber + 1).padStart(4, "0")}`;
   },
 
   create: async (data: {

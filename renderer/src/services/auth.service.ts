@@ -1,25 +1,23 @@
 import api from "./api";
 
 export const authService = {
-  getSetupStatus: async (): Promise<{ ownerExists: boolean }> => {
-    const res = await api.get("/auth/setup-status");
-    return res.data.data;
-  },
+  getSetupStatus: () =>
+    api.get("/auth/setup-status").then((r) => {
+      const data = r.data.data || r.data;
+      return {
+        setupComplete: data.setupComplete ?? data.ownerExists ?? false,
+        ownerExists: data.setupComplete ?? data.ownerExists ?? false,
+      };
+    }),
 
-  getAccounts: async () => {
-    const res = await api.get("/auth/accounts");
-    return res.data.data;
-  },
+  getAccounts: () => api.get("/auth/accounts").then((r) => r.data.data),
 
-  register: async (data: { name: string; email: string; password: string }) => {
-    const res = await api.post("/auth/register", data);
-    return res.data.data;
-  },
+  login: (data: { email: string; password: string }) =>
+    api.post("/auth/login", data).then((r) => r.data.data),
 
-  login: async (data: { userId: string; password: string }) => {
-    const res = await api.post("/auth/login", data);
-    return res.data.data;
-  },
+  cashierLogin: (data: { userId: string; password: string }) =>
+    api.post("/auth/cashier-login", data).then((r) => r.data.data),
+
   sendForgotPasswordOTP: (email: string) =>
     api.post("/auth/forgot-password/send-otp", { email }).then((r) => r.data),
 

@@ -156,10 +156,11 @@ export default function Sidebar() {
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
 
   const handleSignOut = () => {
-    clearAuth();
-    navigate("/auth");
-  };
-
+    const confirmed = window.confirm('Sign out of Pinklet POS?')
+    if (!confirmed) return
+    clearAuth()
+    window.location.href = '/auth'
+  }
   return (
     <div
       style={{

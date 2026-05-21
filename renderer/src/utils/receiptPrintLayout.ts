@@ -29,7 +29,7 @@ export const defaultReceiptLayoutConfig: ReceiptLayoutConfig = {
   pagePaddingMm: 6,
   fontSize: 10,
   headerTitle: "",
-  headerSubtitle: "Thank you for shopping",
+  headerSubtitle: "",
   headerMeta: "",
   footerText: "",
   showShopAddress: true,
@@ -38,14 +38,14 @@ export const defaultReceiptLayoutConfig: ReceiptLayoutConfig = {
   showCustomer: true,
   showCashier: true,
   showBillType: true,
-  showStatus: true,
+  showStatus: false,
   showOrderDates: true,
   showAdvancePayment: true,
-  showDiscountColumn: true,
-  showTaxRow: true,
+  showDiscountColumn: false,
+  showTaxRow: false,
   showLoyaltyUsed: true,
   showPaymentDetails: true,
-  showSavings: true,
+  showSavings: false,
   showCoinsEarned: true,
   showNote: true,
 };
@@ -77,7 +77,7 @@ function escapeHtml(value: unknown): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
@@ -152,6 +152,7 @@ export function buildReceiptPrintHtml(
   const shopName = layout.headerTitle || shopSettings?.shopName || "Pinklet POS";
   const subtitle = layout.headerSubtitle || "";
   const footerText = layout.footerText || shopSettings?.receiptFooter || "";
+  const developerText = shopSettings?.developerText || shopSettings?.developerContact || "Software by Pinklet Dev Team — contact: support@pinklet.dev";
   const lines = Array.isArray(bill?.lines) ? bill.lines : [];
   const isPreOrder = bill?.type === "pre_order" || bill?.status === "pending";
 
@@ -164,77 +165,77 @@ export function buildReceiptPrintHtml(
     .filter(Boolean)
     .join("");
 
-  const totalMarket = lines.reduce((sum: number, line: any) => {
-    const marketPrice = line?.item?.marketPrice;
-    return sum + (marketPrice ? marketPrice * line.quantity : line.unitPrice * line.quantity);
-  }, 0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function unitPriceAfterDiscount(line: any) {
+    const qty = Number(line.quantity || 1);
+    const discount = Number(line.discountAmount || 0);
+    const unit = Number(line.unitPrice || line.item?.price || 0);
+    const perUnitDiscount = qty > 0 ? discount / qty : 0;
+    return Math.max(0, unit - perUnitDiscount);
+  }
 
-  const totalSaved = Math.max(0, totalMarket - (bill?.total || 0) + (bill?.discountAmount || 0));
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  const lineItems = lines
+    .map((line: any, i: number) => {
+      const idx = i + 1;
+      const sku = line?.item?.sku || line?.item?.code || "";
+      const name = line?.item?.name || "Item";
+      const qty = Number(line?.quantity || 0);
+      const unit = Number(line?.unitPrice ?? line?.item?.price ?? 0);
+      const discountTotal = Number(line?.discountAmount || 0);
+      const special = unitPriceAfterDiscount(line);
+      const subtotal = Number(line?.lineTotal ?? Math.max(0, qty * unit - discountTotal));
 
-  const rowCells = (line: any) => {
-    const shopDiscount = line?.item?.marketPrice
-      ? (line.item.marketPrice - line.unitPrice) * line.quantity
-      : 0;
-    const billDiscount = line.discountAmount || 0;
-    const discountTotal = shopDiscount + billDiscount;
-
-    return `
-      <tr>
-        <td class="no-cell">${escapeHtml(String(line?.index ?? ""))}</td>
-        <td class="item-cell">
-          <div class="item-name">${escapeHtml(line?.item?.name || "Item")}</div>
-        </td>
-        <td class="qty-cell">${escapeHtml(String(line.quantity))}</td>
-        <td class="price-cell">${escapeHtml(formatCurrency(line.unitPrice, currencySymbol))}</td>
-        ${layout.showDiscountColumn ? `<td class="discount-cell">${discountTotal > 0 ? `- ${escapeHtml(formatCurrency(discountTotal, currencySymbol))}` : "-"}</td>` : ""}
-        <td class="total-cell">${escapeHtml(formatCurrency(line.lineTotal, currencySymbol))}</td>
-      </tr>
-    `;
-  };
-
-  const lineItems = lines.map((l: any, i: number) => rowCells({ ...l, index: i + 1 })).join("");
+      return `
+        <div class="item-row">
+          <div class="item-first-line">
+            <div class="col no">${escapeHtml(String(idx))}</div>
+            <div class="col list">${escapeHtml(sku)}</div>
+            <div class="col name">${escapeHtml(name)}</div>
+            <div class="col qty">${escapeHtml(String(qty))}</div>
+          </div>
+          <div class="item-second-line">
+            <div class="col selling">${escapeHtml(formatCurrency(unit, currencySymbol))}</div>
+            <div class="col special">${escapeHtml(formatCurrency(special, currencySymbol))}</div>
+            <div class="col discounts">${discountTotal > 0 ? `- ${escapeHtml(formatCurrency(discountTotal, currencySymbol))}` : '-'}</div>
+            <div class="col subtotal">${escapeHtml(formatCurrency(subtotal, currencySymbol))}</div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
 
   const preOrderRows =
     isPreOrder && layout.showOrderDates
       ? `
-      <section class="card accent-card">
+      <section class="card">
         <div class="section-title">Pre-order Details</div>
         <div class="kv"><span>Order Date</span><strong>${escapeHtml(formatShortDate(bill?.orderDate || bill?.createdAt))}</strong></div>
         <div class="kv"><span>Required Date</span><strong>${escapeHtml(formatShortDate(bill?.deliveryDate))}</strong></div>
         ${layout.showAdvancePayment && bill?.advancePayment > 0 ? `<div class="kv"><span>Advance Paid</span><strong>${escapeHtml(formatCurrency(bill.advancePayment, currencySymbol))}</strong></div>` : ""}
+        ${layout.showAdvancePayment && bill?.advancePayment > 0 ? `<div class="kv"><span>Balance Due</span><strong>${escapeHtml(formatCurrency(Math.max(0, (bill?.total || 0) - (bill?.advancePayment || 0)), currencySymbol))}</strong></div>` : ""}
       </section>
     `
       : "";
 
+  const totalDiscount = Number(bill?.discountAmount || 0);
+  const amountReceived = Number(bill?.amountReceived || 0);
+  const total = Number(bill?.total || 0);
+  const balance = Math.max(0, total - amountReceived);
+
   const summaryRows = [
     `<div class="summary-row"><span>Subtotal</span><strong>${escapeHtml(formatCurrency(bill?.subtotal || 0, currencySymbol))}</strong></div>`,
-    bill?.discountAmount > 0
-      ? `<div class="summary-row danger"><span>Discount</span><strong>- ${escapeHtml(formatCurrency(bill.discountAmount, currencySymbol))}</strong></div>`
-      : "",
-    layout.showLoyaltyUsed && bill?.loyaltyCoinsUsed > 0
-      ? `<div class="summary-row"><span>Loyalty Used</span><strong>${escapeHtml(bill.loyaltyCoinsUsed)} coins</strong></div>`
-      : "",
-    layout.showTaxRow
-      ? `<div class="summary-row"><span>${escapeHtml(shopSettings?.taxName || "Tax")}</span><strong>${escapeHtml(formatCurrency(bill?.tax || 0, currencySymbol))}</strong></div>`
-      : "",
-  ]
-    .filter(Boolean)
-    .join("");
+    totalDiscount > 0 ? `<div class="summary-row danger"><span>Total Discount</span><strong>- ${escapeHtml(formatCurrency(totalDiscount, currencySymbol))}</strong></div>` : "",
+    coinsEarned > 0 ? `<div class="summary-row"><span>Loyalty Earns</span><strong>${escapeHtml(String(coinsEarned))} coin${coinsEarned === 1 ? '' : 's'}</strong></div>` : "",
+    layout.showTaxRow ? `<div class="summary-row"><span>${escapeHtml(shopSettings?.taxName || 'Tax')}</span><strong>${escapeHtml(formatCurrency(bill?.tax || 0, currencySymbol))}</strong></div>` : "",
+  ].filter(Boolean).join("");
 
-  const paymentRows =
-    layout.showPaymentDetails
-      ? [
-          `<div class="summary-row"><span>Payment</span><strong>${escapeHtml(String(bill?.paymentMethod || "-").toUpperCase())}</strong></div>`,
-          bill?.paymentMethod === "cash"
-            ? `<div class="summary-row"><span>Received</span><strong>${escapeHtml(formatCurrency(bill?.amountReceived || bill?.total || 0, currencySymbol))}</strong></div>`
-            : "",
-          bill?.paymentMethod === "cash" && bill?.change > 0
-            ? `<div class="summary-row"><span>Change</span><strong>${escapeHtml(formatCurrency(bill.change, currencySymbol))}</strong></div>`
-            : "",
-        ]
-          .filter(Boolean)
-          .join("")
-      : "";
+  const paymentRows = layout.showPaymentDetails
+    ? [
+        `<div class="summary-row"><span>Amount Received</span><strong>${escapeHtml(formatCurrency(amountReceived || 0, currencySymbol))}</strong></div>`,
+        `<div class="summary-row"><span>Balance</span><strong>${escapeHtml(formatCurrency(balance, currencySymbol))}</strong></div>`,
+      ].filter(Boolean).join("")
+    : "";
 
   const infoRows = [
     `<div class="kv"><span>Bill No</span><strong>${escapeHtml(bill?.billNumber || "-")}</strong></div>`,
@@ -297,11 +298,11 @@ export function buildReceiptPrintHtml(
 
           .brand h1 {
             margin: 0;
-            font-size: calc(var(--font-size) + 7px);
+            font-size: calc(var(--font-size) + 4px);
             line-height: 1.1;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.03em;
             text-transform: uppercase;
-            color: var(--brand);
+            color: #000;
           }
 
           .brand p {
@@ -319,22 +320,17 @@ export function buildReceiptPrintHtml(
 
           .card {
             border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 10px;
-            margin-bottom: 10px;
+            border-radius: 0;
+            padding: 8px;
+            margin-bottom: 8px;
             background: #fff;
-          }
-
-          .accent-card {
-            border-color: #ffd1e2;
-            background: linear-gradient(180deg, #fff7fb 0%, #ffffff 100%);
           }
 
           .section-title {
             margin-bottom: 8px;
             font-size: calc(var(--font-size) - 1px);
             font-weight: 800;
-            color: var(--brand);
+            color: #000;
             text-transform: uppercase;
             letter-spacing: 0.06em;
           }
@@ -419,7 +415,7 @@ export function buildReceiptPrintHtml(
 
           .discount-cell {
             width: 12%;
-            color: #dc2626;
+            color: #111111;
             font-weight: 700;
           }
 
@@ -453,7 +449,7 @@ export function buildReceiptPrintHtml(
           }
 
           .summary {
-            background: var(--soft);
+            background: #fff;
           }
 
           .summary-row {
@@ -477,41 +473,23 @@ export function buildReceiptPrintHtml(
             text-align: right;
           }
 
-          .summary-row.danger strong {
-            color: #dc2626;
-          }
-
           .total-box {
             margin-top: 10px;
-            padding: 10px;
-            border-radius: 12px;
-            background: var(--brand);
-            color: #fff;
+            padding: 8px 0 0;
+            border-top: 1px dashed #111111;
+            color: #111111;
           }
 
           .total-box .summary-row {
             margin-bottom: 0;
           }
 
-          .total-box .summary-row span,
-          .total-box .summary-row strong {
-            color: #fff;
-          }
-
-          .savings {
-            margin-top: 10px;
-            border-radius: 12px;
-            padding: 10px;
-            background: #f8f8ff;
-            border: 1px solid #d7d7ff;
-            color: #3b3b98;
-            text-align: center;
-          }
-
-          .savings strong {
-            display: block;
-            margin-top: 2px;
-            font-size: calc(var(--font-size) + 3px);
+          .simple-note {
+            margin-top: 8px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 8px;
+            font-size: calc(var(--font-size) - 1px);
+            color: #111111;
           }
 
           .footer {
@@ -527,13 +505,6 @@ export function buildReceiptPrintHtml(
             overflow-wrap: anywhere;
           }
 
-          .dev-credit {
-            margin-top: 6px;
-            font-weight: 700;
-            color: var(--muted);
-            font-size: calc(var(--font-size) - 1px);
-            white-space: pre-wrap;
-          }
         </style>
       </head>
       <body>
@@ -553,50 +524,26 @@ export function buildReceiptPrintHtml(
 
           <section class="card">
             <div class="section-title">Items</div>
-            <table>
-              <thead>
-                <tr>
-                  <th style="text-align:left;">No.</th>
-                  <th style="text-align:left;">Item</th>
-                  <th>QTY</th>
-                  <th>PRICE</th>
-                  ${layout.showDiscountColumn ? "<th>DISCOUNT</th>" : ""}
-                  <th>TOTAL</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${lineItems || `<tr><td colspan="${layout.showDiscountColumn ? "5" : "4"}" class="item-meta">No items</td></tr>`}
-              </tbody>
-            </table>
+            <div class="items">
+              ${lineItems || `<div class="item-meta">No items</div>`}
+            </div>
           </section>
 
           <section class="card summary">
             <div class="section-title">Summary</div>
             ${summaryRows}
-            <div class="total-box">
-              <div class="summary-row"><span>Total</span><strong>${escapeHtml(formatCurrency(bill?.total || 0, currencySymbol))}</strong></div>
-            </div>
-            ${paymentRows}
+              <div class="total-box">
+                <div class="summary-row"><span>Total</span><strong>${escapeHtml(formatCurrency(total || 0, currencySymbol))}</strong></div>
+              </div>
+              ${paymentRows}
+              ${layout.showCoinsEarned && coinsEarned > 0 ? `<div class="simple-note">Loyalty coins earned: <strong>${escapeHtml(coinsEarned)} coin${coinsEarned === 1 ? "" : "s"}</strong></div>` : ""}
+              <div class="simple-note" style="margin-top:8px; font-weight:700; text-align:center;">Come again!</div>
           </section>
-
-          ${layout.showSavings && totalSaved > 0 ? `
-            <div class="savings">
-              You saved today
-              <strong>${escapeHtml(formatCurrency(totalSaved, currencySymbol))}</strong>
-            </div>
-          ` : ""}
-
-          ${layout.showCoinsEarned && coinsEarned > 0 ? `
-            <div class="savings" style="border-color:#ffd1e2;background:#fff7fb;color:#ee2d7c;">
-              Loyalty coins earned
-              <strong>${escapeHtml(coinsEarned)} coin${coinsEarned === 1 ? "" : "s"}</strong>
-            </div>
-          ` : ""}
 
           <div class="footer">
             ${footerText ? `<div>${escapeHtml(footerText)}</div>` : ""}
             ${layout.showNote && bill?.note ? `<div class="note">Note: ${escapeHtml(bill.note)}</div>` : ""}
-            <div class="dev-credit">My Name, Developed By Ravindu Dilshan, Contact for your shop POS System: 076 405 2661</div>
+            ${developerText ? `<div style="margin-top:8px; font-size:calc(var(--font-size)-1px); color:var(--muted);">${escapeHtml(developerText)}</div>` : ""}
           </div>
         </main>
 

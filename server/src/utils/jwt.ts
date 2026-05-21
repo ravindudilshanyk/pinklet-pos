@@ -10,8 +10,14 @@ export function signToken(payload: { userId: string; role: string }) {
 }
 
 export function verifyToken(token: string) {
-  return jwt.verify(token, JWT_SECRET) as {
-    userId: string
+  const decoded = jwt.verify(token, JWT_SECRET) as {
+    userId?: string
+    id?: string
     role: string
+  }
+
+  return {
+    userId: decoded.userId ?? decoded.id ?? "",
+    role: decoded.role,
   }
 }

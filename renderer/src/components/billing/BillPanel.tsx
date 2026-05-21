@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import BillItemRow from './BillItem'
 import CustomerSearch from './CustomerSearch'
 import PaymentModal from './PaymentModal'
@@ -26,6 +26,43 @@ export default function BillPanel() {
   const [showPreOrder, setShowPreOrder] = useState(false)
   const [showForceCustomer, setShowForceCustomer] = useState(false)
   const [pendingPayment, setPendingPayment] = useState(false)
+
+  const handleProceed = () => {
+    if (items.length === 0) return
+    if (!customer) {
+      setPendingPayment(true)
+      setShowCustomer(true)
+      return
+    }
+    if (activeTab === 'pre_order') {
+      setShowPreOrder(true)
+    } else {
+      setShowPayment(true)
+    }
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'F12') return
+
+      const target = e.target as HTMLElement | null
+      const isTypingTarget = Boolean(target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+      ))
+
+      if (isTypingTarget) return
+      if (showPayment || showHold || showCustomer || showPreOrder || showForceCustomer) return
+
+      e.preventDefault()
+      handleProceed()
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeTab, customer, handleProceed, items.length, showCustomer, showForceCustomer, showHold, showPayment, showPreOrder])
 
   const subtotal = getSubtotal()
   const discount = getTotalDiscount()
@@ -203,18 +240,7 @@ export default function BillPanel() {
         </div>
 
         <button
-          onClick={() => {
-            if (!customer) {
-              setPendingPayment(true)
-              setShowCustomer(true)
-              return
-            }
-            if (activeTab === 'pre_order') {
-              setShowPreOrder(true)
-            } else {
-              setShowPayment(true)
-            }
-          }}
+          onClick={handleProceed}
           disabled={items.length === 0}
           style={{
             width: '100%', padding: '14px', borderRadius: '12px', border: 'none',

@@ -45,15 +45,20 @@ export const salesService = {
       .patch(`/sales/pre-orders/${id}/status`, { status })
       .then((r) => r.data.data),
 
-  recordBalancePayment: (
+  recordBalancePayment: async (
     id: string,
     amount: number,
     paymentMethod: string,
     note?: string,
-  ) =>
-    api
-      .post(`/sales/pre-orders/${id}/payment`, { amount, paymentMethod, note })
-      .then((r) => r.data.data),
+  ) => {
+    return api
+      .post(`/sales/pre-orders/${id}/payment`, {
+        amount,
+        paymentMethod,
+        note,
+      })
+      .then((r) => r.data.data);
+  },
 
   getSummary: (startDate?: string, endDate?: string) => {
     const q = new URLSearchParams();

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useBillingStore } from '@/stores/billingStore'
 import { billService } from '@/services/billing.service'
 import { customersService } from '@/services/customers.service'
@@ -7,22 +7,99 @@ interface Props {
   onClose: () => void
 }
 
+type CustomerSearchResult = {
+  id: string
+  name: string
+  phone?: string | null
+  whatsappNumber?: string | null
+  points: number
+  totalSpent?: number
+  lastVisit?: string | Date | null
+  relevanceScore?: number
+  activePreOrderCount?: number
+  dueSoonPreOrderCount?: number
+  _count?: {
+    bills?: number
+  }
+}
+
 export default function CustomerSearch({ onClose }: Props) {
   const setCustomer = useBillingStore((s) => s.setCustomer)
   const currentCustomer = useBillingStore((s) => s.customer)
 
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<CustomerSearchResult[]>([])
+  const [recommendedCustomers, setRecommendedCustomers] = useState<CustomerSearchResult[]>([])
+  const [selectedCustomerIndex, setSelectedCustomerIndex] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [loadingRecommended, setLoadingRecommended] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [addForm, setAddForm] = useState({ name: '', phone: '', whatsappNumber: '' })
   const [addLoading, setAddLoading] = useState(false)
   const [addError, setAddError] = useState('')
   const [sameAsPhone, setSameAsPhone] = useState(false)
 
+  useEffect(() => {
+    let isActive = true
+
+    const getTimeValue = (value?: string | Date | null) => {
+      if (!value) return 0
+      const parsed = new Date(value).getTime()
+      return Number.isNaN(parsed) ? 0 : parsed
+    }
+
+    const loadRelevantCustomers = async () => {
+      setLoadingRecommended(true)
+      try {
+        const customers = await customersService.getAll()
+        if (!isActive) return
+
+        const ranked = [...(customers as CustomerSearchResult[])]
+          .sort((a, b) => {
+            const scoreDiff = Number(b.relevanceScore || 0) - Number(a.relevanceScore || 0)
+            if (scoreDiff !== 0) return scoreDiff
+
+            const dueSoonDiff = Number(b.dueSoonPreOrderCount || 0) - Number(a.dueSoonPreOrderCount || 0)
+            if (dueSoonDiff !== 0) return dueSoonDiff
+
+            const activePreOrderDiff = Number(b.activePreOrderCount || 0) - Number(a.activePreOrderCount || 0)
+            if (activePreOrderDiff !== 0) return activePreOrderDiff
+
+            const lastVisitDiff = getTimeValue(b.lastVisit) - getTimeValue(a.lastVisit)
+            if (lastVisitDiff !== 0) return lastVisitDiff
+
+            const spentDiff = Number(b.totalSpent || 0) - Number(a.totalSpent || 0)
+            if (spentDiff !== 0) return spentDiff
+
+            const billsDiff = Number(b._count?.bills || 0) - Number(a._count?.bills || 0)
+            if (billsDiff !== 0) return billsDiff
+
+            return Number(b.points || 0) - Number(a.points || 0)
+          })
+          .slice(0, 8)
+
+        setRecommendedCustomers(ranked)
+      } catch {
+        if (isActive) setRecommendedCustomers([])
+      } finally {
+        if (isActive) setLoadingRecommended(false)
+      }
+    }
+
+    loadRelevantCustomers()
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
   const handleSearch = async (q: string) => {
     setQuery(q)
-    if (q.length < 2) { setResults([]); return }
+    setSelectedCustomerIndex(0)
+    if (q.length < 2) {
+      setResults([])
+      return
+    }
     setLoading(true)
     try {
       const data = await billService.searchCustomers(q)
@@ -32,12 +109,12 @@ export default function CustomerSearch({ onClose }: Props) {
     }
   }
 
-  const handleSelect = (customer: any) => {
+  const handleSelect = (customer: CustomerSearchResult) => {
     setCustomer({
       id: customer.id,
       name: customer.name,
-      phone: customer.phone,
-      whatsappNumber: customer.whatsappNumber,
+      phone: customer.phone || undefined,
+      whatsappNumber: customer.whatsappNumber || undefined,
       points: customer.points,
     })
     onClose()
@@ -66,13 +143,16 @@ export default function CustomerSearch({ onClose }: Props) {
       setCustomer({
         id: customer.id,
         name: customer.name,
-        phone: customer.phone,
-        whatsappNumber: customer.whatsappNumber,
+        phone: customer.phone || undefined,
+        whatsappNumber: customer.whatsappNumber || undefined,
         points: customer.points || 0,
       })
       onClose()
-    } catch (err: any) {
-      setAddError(err.response?.data?.error?.message || 'Failed to add customer')
+    } catch (err: unknown) {
+      const errorMessage =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message || 'Failed to add customer'
+      setAddError(errorMessage)
     } finally {
       setAddLoading(false)
     }
@@ -90,6 +170,18 @@ export default function CustomerSearch({ onClose }: Props) {
     flex: 1, border: 'none', outline: 'none',
     fontSize: '14px', color: '#090909',
     fontFamily: 'Inter, sans-serif', backgroundColor: 'transparent',
+  }
+
+  const showingSearchResults = query.length >= 2
+  const visibleCustomers = showingSearchResults ? results : recommendedCustomers
+  const safeSelectedCustomerIndex = visibleCustomers.length === 0
+    ? -1
+    : Math.min(selectedCustomerIndex, visibleCustomers.length - 1)
+
+  const selectVisibleCustomer = (index: number) => {
+    const customer = visibleCustomers[index]
+    if (!customer) return
+    handleSelect(customer)
   }
 
   return (
@@ -150,18 +242,53 @@ export default function CustomerSearch({ onClose }: Props) {
                   type="text"
                   value={query}
                   onChange={(e) => handleSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (showAddForm) return
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault()
+                      if (visibleCustomers.length > 0) {
+                        setSelectedCustomerIndex((current) => Math.min(current + 1, visibleCustomers.length - 1))
+                      }
+                      return
+                    }
+                    if (e.key === 'ArrowUp') {
+                      e.preventDefault()
+                      if (visibleCustomers.length > 0) {
+                        setSelectedCustomerIndex((current) => Math.max(current - 1, 0))
+                      }
+                      return
+                    }
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (visibleCustomers.length > 0) {
+                        selectVisibleCustomer(safeSelectedCustomerIndex)
+                      }
+                    }
+                  }}
                   placeholder="Search by name or phone..."
                   style={{ flex: 1, border: 'none', outline: 'none', fontSize: '14px', color: '#090909', fontFamily: 'Inter, sans-serif', backgroundColor: 'transparent' }}
                 />
               </div>
 
               {loading && <p style={{ textAlign: 'center', color: 'rgba(9,9,9,0.40)', fontSize: '13px' }}>Searching...</p>}
+              {!showingSearchResults && loadingRecommended && (
+                <p style={{ textAlign: 'center', color: 'rgba(9,9,9,0.40)', fontSize: '13px' }}>
+                  Loading relevant customers...
+                </p>
+              )}
 
-              {results.map((c) => (
+              {!showingSearchResults && visibleCustomers.length > 0 && !loadingRecommended && (
+                <p style={{ margin: '0 0 8px 2px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Relevant Customers (Top Picks)
+                </p>
+              )}
+
+              {visibleCustomers.map((c) => (
                 <button
                   key={c.id}
+                  onMouseEnter={() => setSelectedCustomerIndex(visibleCustomers.findIndex((candidate) => candidate.id === c.id))}
                   onClick={() => handleSelect(c)}
-                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '12px', border: currentCustomer?.id === c.id ? '2px solid #EE2D7C' : '1px solid rgba(238,45,124,0.12)', backgroundColor: currentCustomer?.id === c.id ? 'rgba(238,45,124,0.04)' : 'transparent', cursor: 'pointer', marginBottom: '8px', fontFamily: 'Inter, sans-serif', textAlign: 'left' }}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', borderRadius: '12px', border: currentCustomer?.id === c.id ? '2px solid #EE2D7C' : safeSelectedCustomerIndex === visibleCustomers.findIndex((candidate) => candidate.id === c.id) ? '2px solid #EE2D7C' : '1px solid rgba(238,45,124,0.12)', backgroundColor: currentCustomer?.id === c.id ? 'rgba(238,45,124,0.04)' : safeSelectedCustomerIndex === visibleCustomers.findIndex((candidate) => candidate.id === c.id) ? 'rgba(238,45,124,0.06)' : 'transparent', cursor: 'pointer', marginBottom: '8px', fontFamily: 'Inter, sans-serif', textAlign: 'left' }}
                 >
                   <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'rgba(238,45,124,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 700, color: '#EE2D7C', flexShrink: 0 }}>
                     {c.name.charAt(0).toUpperCase()}

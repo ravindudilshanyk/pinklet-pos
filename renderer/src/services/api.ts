@@ -1,24 +1,26 @@
 import axios from "axios";
+import { useAuthStore } from "@/stores/authStore";
 
 const api = axios.create({
   baseURL: "http://localhost:3001/api/v1",
-  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = useAuthStore.getState().token;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
 api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem("accessToken");
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      useAuthStore.getState().clearAuth();
       window.location.href = "/auth";
     }
-    return Promise.reject(err);
+    return Promise.reject(error);
   },
 );
 

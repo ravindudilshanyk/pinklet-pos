@@ -1,0 +1,57 @@
+name: Server Integration Tests
+
+on:
+  pull_request:
+    paths:
+      - "server/**"
+      - "shared/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/server-integration.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "server/**"
+      - "shared/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/server-integration.yml"
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.0.8
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Prisma generate
+        working-directory: server
+        run: pnpm exec prisma generate
+
+      - name: Run server integration tests
+        working-directory: server
+        env:
+          DATABASE_URL: file:./dev.db
+          JWT_SECRET: test-secret
+        run: pnpm test:integration

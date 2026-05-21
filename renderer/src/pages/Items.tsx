@@ -4,7 +4,7 @@ import { itemsService } from "@/services/items.service";
 import ItemFormModal from "@/components/inventory/ItemFormModal";
 import StockUpModal from "@/components/inventory/StockUpModal";
 import WasteModal from "@/components/inventory/WasteModal";
-import WasteLogModal from '@/components/inventory/WasteLogModal'
+import WasteLogModal from "@/components/inventory/WasteLogModal";
 
 type FilterType = "all" | "low_stock" | "out_of_stock";
 
@@ -48,7 +48,6 @@ export default function Items() {
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [stockUpItem, setStockUpItem] = useState<Item | null>(null);
   const [wasteItem, setWasteItem] = useState<Item | null>(null);
-  const [showWaste, setShowWaste] = useState(false)
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: [
@@ -176,20 +175,6 @@ export default function Items() {
             <path d="M12 5v14M5 12h14" />
           </svg>
           Add Item
-        </button>
-
-        <button
-          onClick={() => setShowWaste(true)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '10px 16px', borderRadius: '12px',
-            border: '1px solid rgba(239,68,68,0.25)',
-            backgroundColor: 'rgba(239,68,68,0.06)',
-            color: '#ef4444', fontSize: '13px', fontWeight: 600,
-            cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-          }}
-        >
-          🗑 Log Waste
         </button>
       </div>
 
@@ -503,13 +488,10 @@ export default function Items() {
                 key={item.id}
                 item={item}
                 isLast={index === items.length - 1}
-                onEdit={() => {
-                  setEditingItem(item);
-                  setShowAddItem(true);
-                }}
+                onEdit={() => { setEditingItem(item); setShowAddItem(true) }}
                 onDelete={() => handleDelete(item.id)}
                 onStockUp={() => setStockUpItem(item)}
-                onWaste={() => setWasteItem(item)}
+                onWaste={() => setWasteItem(item)}   // ← ADD
               />
             ))}
           </div>
@@ -535,34 +517,23 @@ export default function Items() {
         />
       )}
       {wasteItem && (
-        <WasteModal
-          item={wasteItem}
-          onClose={() => setWasteItem(null)}
-          onSaved={refresh}
+        <WasteLogModal
+          item={wasteItem}          // ← pass specific item
+          onClose={() => { setWasteItem(null); refresh() }}
         />
-      )}
-      {showWaste && (
-        <WasteLogModal onClose={() => { setShowWaste(false); refresh() }} />
       )}
     </div>
   );
 }
 
 // ── Table Row ─────────────────────────────────────────────
-function ItemTableRow({
-  item,
-  isLast,
-  onEdit,
-  onDelete,
-  onStockUp,
-  onWaste,
-}: {
-  item: Item;
-  isLast: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-  onStockUp: () => void;
-  onWaste: () => void;
+function ItemTableRow({ item, isLast, onEdit, onDelete, onStockUp, onWaste }: {
+  item: any
+  isLast: boolean
+  onEdit: () => void
+  onDelete: () => void
+  onStockUp: () => void
+  onWaste: () => void   // ← ADD
 }) {
   const isLowStock = item.stock <= item.lowStockAlert && item.stock > 0;
   const isOutOfStock = item.stock === 0;
@@ -824,13 +795,14 @@ function ItemTableRow({
         {/* Waste/Damage */}
         <button
           onClick={onWaste}
-          title="Log waste/damage"
+          title="Log as Waste"
           style={{
             width: '30px', height: '30px', borderRadius: '8px',
-            border: '1px solid rgba(245,158,11,0.25)',
-            backgroundColor: 'rgba(245,158,11,0.08)',
-            color: '#f59e0b', cursor: 'pointer',
+            border: '1px solid rgba(239,68,68,0.20)',
+            backgroundColor: 'rgba(239,68,68,0.06)',
+            color: '#ef4444', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '14px', fontWeight: 700,
           }}
         >
           <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">

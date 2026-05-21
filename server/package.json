@@ -6,6 +6,10 @@
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "test:integration:tx": "ts-node tests/billingRollback.ts",
+    "test:integration:billing-service": "ts-node tests/billingServiceRollback.ts",
+    "test:integration:waste": "ts-node tests/wasteRollback.ts",
+    "test:integration": "pnpm test:integration:tx && pnpm test:integration:billing-service && pnpm test:integration:waste",
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {

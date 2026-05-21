@@ -2,6 +2,7 @@ import { db } from "../utils/db";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { emailService } from "../utils/email";
+import { signToken } from "../utils/jwt";
 
 const JWT_SECRET = process.env.JWT_SECRET || "pinklet-secret";
 const JWT_EXPIRES = "7d";
@@ -86,11 +87,7 @@ export const authService = {
     await db.ownerSetup.delete({ where: { email: data.email } });
 
     // Generate token
-    const token = jwt.sign(
-      { id: owner.id, role: owner.role, name: owner.name },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES },
-    );
+    const token = signToken({ userId: owner.id, role: owner.role });
 
     return {
       token,
@@ -111,11 +108,7 @@ export const authService = {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new Error("INVALID_CREDENTIALS");
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role, name: user.name },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES },
-    );
+    const token = signToken({ userId: user.id, role: user.role });
 
     return {
       token,
@@ -137,11 +130,7 @@ export const authService = {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new Error("INVALID_CREDENTIALS");
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role, name: user.name },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES },
-    );
+    const token = signToken({ userId: user.id, role: user.role });
 
     return {
       token,

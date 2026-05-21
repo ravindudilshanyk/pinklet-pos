@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useBillingStore, BillItem } from '@/stores/billingStore'
 import DiscountPanel from './DiscountPanel'
 
@@ -10,13 +10,44 @@ interface Props {
 export default function BillItemRow({ item, index }: Props) {
   const updateQuantity = useBillingStore((s) => s.updateQuantity)
   const removeItem = useBillingStore((s) => s.removeItem)
+  const billItems = useBillingStore((s) => s.items)
+  const focusItemId = useBillingStore((s) => s.focusItemId)
+  const setFocusItemId = useBillingStore((s) => s.setFocusItemId)
   const [showDiscount, setShowDiscount] = useState(false)
+  const quantityRef = useRef<HTMLInputElement>(null)
 
   const initialDiscount = item.marketPrice
     ? (item.marketPrice - item.unitPrice) * item.quantity
     : 0
   const billDiscount = item.discount?.amount ?? 0
   const totalSaving = initialDiscount + billDiscount
+
+  useEffect(() => {
+    if (focusItemId !== item.itemId) return
+    quantityRef.current?.focus()
+    quantityRef.current?.select()
+    setFocusItemId(null)
+  }, [focusItemId, item.itemId, setFocusItemId])
+
+  const focusSearch = () => {
+    const searchInput = document.querySelector('#item-search-input') as HTMLInputElement | null
+    searchInput?.focus()
+    searchInput?.select()
+  }
+
+  const focusQuantityByIndex = (targetIndex: number) => {
+    const targetItem = billItems[targetIndex]
+    if (!targetItem) {
+      focusSearch()
+      return
+    }
+
+    const targetInput = document.querySelector(
+      `[data-bill-quantity-input="${targetItem.itemId}"]`,
+    ) as HTMLInputElement | null
+    targetInput?.focus()
+    targetInput?.select()
+  }
 
   return (
     <div style={{
@@ -114,10 +145,34 @@ export default function BillItemRow({ item, index }: Props) {
             style={{ width: '20px', height: '20px', border: 'none', backgroundColor: 'transparent', color: '#EE2D7C', cursor: 'pointer', fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >−</button>
           <input
+            ref={quantityRef}
+            data-bill-quantity-input={item.itemId}
             type="number"
             value={item.quantity}
             onChange={(e) => updateQuantity(item.itemId, parseInt(e.target.value) || 1)}
-            style={{ width: '32px', border: 'none', outline: 'none', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: '#090909', fontFamily: 'Inter, sans-serif', backgroundColor: 'transparent' }}
+            onFocus={(e) => e.currentTarget.select()}
+            onKeyDown={(e) => {
+              if (e.altKey && e.key.toLowerCase() === 'd') {
+                e.preventDefault()
+                setShowDiscount(true)
+                return
+              }
+              if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                focusQuantityByIndex(index + 1)
+                return
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                focusQuantityByIndex(index - 1)
+                return
+              }
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                focusSearch()
+              }
+            }}
+            style={{ width: '36px', border: 'none', outline: 'none', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: '#090909', fontFamily: 'Inter, sans-serif', backgroundColor: 'transparent' }}
           />
           <button
             onClick={() => updateQuantity(item.itemId, item.quantity + 1)}
@@ -138,7 +193,7 @@ export default function BillItemRow({ item, index }: Props) {
             fontFamily: 'Inter, sans-serif',
           }}
         >
-          {item.discount ? `% ${item.discount.label || 'Discount'}` : '% Add Discount'}
+          {item.discount ? `% ${item.discount.label || 'Discount'}` : '% Add Discount (Alt+D)'}
         </button>
       </div>
 

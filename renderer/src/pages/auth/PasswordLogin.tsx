@@ -19,24 +19,36 @@ export default function PasswordLogin() {
   }
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+    e.preventDefault()
+    setError('')
     try {
-      setLoading(true);
-      const result = await authService.login({
-        userId: account.id,
-        password,
-      });
-      setAuth(result.user, result.token);
-      navigate("/");
+      setLoading(true)
+      let result
+
+      if (account.email) {
+        // Owner or cashier with email — use email login
+        result = await authService.login({
+          email: account.email,
+          password,
+        })
+      } else {
+        // Cashier without email — use ID-based login
+        result = await authService.cashierLogin({
+          userId: account.id,
+          password,
+        })
+      }
+
+      setAuth(result.token, result.user)
+      navigate('/')
     } catch (err: unknown) {
-      type ErrWithResponse = { response?: { data?: { error?: { message?: string } } } };
-      const msg = ((err as ErrWithResponse)?.response?.data?.error?.message) ?? "Login failed";
-      setError(msg);
+      type ErrWithResponse = { response?: { data?: { error?: { message?: string } } } }
+      const msg = ((err as ErrWithResponse)?.response?.data?.error?.message) ?? 'Invalid password'
+      setError(msg)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div

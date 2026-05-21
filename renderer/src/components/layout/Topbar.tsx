@@ -11,11 +11,86 @@ export default function Topbar() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [online, setOnline] = useState<boolean>(true)
+
+  const seenNotificationsKey = 'pinklet-seen-notifications'
+
+  const getSeenNotifications = () => {
+    try {
+      const raw = window.localStorage.getItem(seenNotificationsKey)
+      const parsed = raw ? JSON.parse(raw) : []
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+
+  const saveSeenNotifications = (seenIds: string[]) => {
+    try {
+      window.localStorage.setItem(seenNotificationsKey, JSON.stringify(seenIds))
+    } catch {
+      // ignore storage issues
+    }
+  }
+
+  const markAllNotificationsSeen = (currentNotifications: any[] = notifications) => {
+    const seenIds = new Set<string>(getSeenNotifications())
+    currentNotifications.forEach((notif) => seenIds.add(String(notif.id)))
+    saveSeenNotifications(Array.from(seenIds))
+    setUnreadCount(0)
+  }
+
+  const markNotificationSeen = (notificationId: string) => {
+    const seenIds = new Set<string>(getSeenNotifications())
+    seenIds.add(notificationId)
+    saveSeenNotifications(Array.from(seenIds))
+    const remainingUnread = notifications.filter((notif) => !seenIds.has(String(notif.id))).length
+    setUnreadCount(remainingUnread)
+  }
 
   // Clock
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(timer)
+  }, [])
+
+  // Online indicator: navigator + server health ping
+  useEffect(() => {
+    let mounted = true
+
+    const updateOnline = async () => {
+      const nav = navigator.onLine
+      if (!nav) {
+        if (mounted) setOnline(false)
+        return
+      }
+
+      try {
+        const controller = new AbortController()
+        const id = setTimeout(() => controller.abort(), 2500)
+        const resp = await fetch('http://localhost:3001/api/v1/health', { signal: controller.signal })
+        clearTimeout(id)
+        if (mounted) setOnline(resp.ok)
+      } catch (e) {
+        if (mounted) setOnline(false)
+      }
+    }
+
+    const onlineHandler = () => updateOnline()
+    const offlineHandler = () => setOnline(false)
+
+    window.addEventListener('online', onlineHandler)
+    window.addEventListener('offline', offlineHandler)
+
+    updateOnline()
+    const interval = setInterval(updateOnline, 30000)
+
+    return () => {
+      mounted = false
+      window.removeEventListener('online', onlineHandler)
+      window.removeEventListener('offline', offlineHandler)
+      clearInterval(interval)
+    }
   }, [])
 
   // Load notifications
@@ -73,8 +148,9 @@ export default function Topbar() {
         })
       })
 
+      const seenIds = new Set<string>(getSeenNotifications())
       setNotifications(notifs)
-      setUnreadCount(notifs.length)
+      setUnreadCount(notifs.filter((notif) => !seenIds.has(String(notif.id))).length)
     } catch {
       // Silent fail
     }
@@ -93,6 +169,13 @@ export default function Topbar() {
   const timeStr = time.toLocaleTimeString('en-LK', {
     hour: '2-digit', minute: '2-digit', second: '2-digit',
   })
+
+
+  const handleRefresh = async () => {
+    setNotifications([])
+    setUnreadCount(0)
+    await loadNotifications()
+  }
 
   return (
     <div style={{
@@ -136,10 +219,17 @@ export default function Topbar() {
       {/* Quick stats row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
+        {/* Quick actions */}
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <QuickBtn label="New Bill" icon="🧾" onClick={() => navigate('/bill')} color="#EE2D7C" />
+          <QuickBtn label="Add Item" icon="📦" onClick={() => navigate('/items')} color="#3B3B98" />
+          <QuickBtn label="Pre-Orders" icon="📋" onClick={() => navigate('/pre-orders')} color="#f59e0b" />
+        </div>
+
         {/* Notification count badges */}
         {notifications.filter(n => n.type === 'low_stock').length > 0 && (
           <div
-            onClick={() => { setShowNotifications(true); navigate('/items') }}
+            onClick={() => { setShowNotifications(true); markAllNotificationsSeen(); navigate('/items') }}
             style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', backgroundColor: 'rgba(245,158,11,0.10)', cursor: 'pointer' }}
           >
             <span style={{ fontSize: '12px' }}>⚠</span>
@@ -151,7 +241,7 @@ export default function Topbar() {
 
         {notifications.filter(n => n.type === 'pre_order').length > 0 && (
           <div
-            onClick={() => navigate('/pre-orders')}
+            onClick={() => { markAllNotificationsSeen(); navigate('/pre-orders') }}
             style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', backgroundColor: 'rgba(59,59,152,0.08)', cursor: 'pointer' }}
           >
             <span style={{ fontSize: '12px' }}>📅</span>
@@ -172,14 +262,23 @@ export default function Topbar() {
       </div>
 
       {/* Online indicator */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-        <div style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#22c55e', boxShadow: '0 0 0 2px rgba(34,197,94,0.25)' }} />
-        <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 600 }}>Online</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: online ? '#22c55e' : '#ef4444', boxShadow: online ? '0 0 0 2px rgba(34,197,94,0.18)' : '0 0 0 2px rgba(239,68,68,0.12)' }} />
+          <span style={{ fontSize: '11px', color: online ? '#16a34a' : '#ef4444', fontWeight: 700 }}>{online ? 'Online' : 'Offline'}</span>
+        </div>
+
       </div>
 
       {/* Notification bell */}
       <button
-        onClick={() => setShowNotifications(!showNotifications)}
+        onClick={() => {
+          const nextOpen = !showNotifications
+          setShowNotifications(nextOpen)
+          if (nextOpen) {
+            markAllNotificationsSeen()
+          }
+        }}
         style={{
           width: '36px', height: '36px', borderRadius: '10px',
           border: '1px solid rgba(9,9,9,0.08)',
@@ -231,7 +330,7 @@ export default function Topbar() {
                 </p>
               </div>
               <button
-                onClick={() => { loadNotifications(); }}
+                onClick={handleRefresh}
                 style={{ width: '30px', height: '30px', borderRadius: '8px', border: '1px solid rgba(9,9,9,0.08)', backgroundColor: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 title="Refresh"
               >
@@ -260,7 +359,7 @@ export default function Topbar() {
                         Upcoming Pre-Orders
                       </p>
                       {notifications.filter(n => n.type === 'pre_order').map((notif) => (
-                        <NotifItem key={notif.id} notif={notif} onClose={() => setShowNotifications(false)} />
+                        <NotifItem key={notif.id} notif={notif} onClose={() => setShowNotifications(false)} onSeen={() => markNotificationSeen(String(notif.id))} />
                       ))}
                     </div>
                   )}
@@ -272,7 +371,7 @@ export default function Topbar() {
                         Stock Alerts
                       </p>
                       {notifications.filter(n => n.type === 'low_stock').map((notif) => (
-                        <NotifItem key={notif.id} notif={notif} onClose={() => setShowNotifications(false)} />
+                        <NotifItem key={notif.id} notif={notif} onClose={() => setShowNotifications(false)} onSeen={() => markNotificationSeen(String(notif.id))} />
                       ))}
                     </div>
                   )}
@@ -304,10 +403,14 @@ export default function Topbar() {
   )
 }
 
-function NotifItem({ notif, onClose }: { notif: any; onClose: () => void }) {
+function NotifItem({ notif, onClose, onSeen }: { notif: any; onClose: () => void; onSeen: () => void }) {
   return (
     <div
-      onClick={() => { notif.action?.(); onClose() }}
+      onClick={() => {
+        onSeen()
+        notif.action?.()
+        onClose()
+      }}
       style={{
         display: 'flex', alignItems: 'flex-start', gap: '12px',
         padding: '12px 18px', cursor: 'pointer',
@@ -328,5 +431,26 @@ function NotifItem({ notif, onClose }: { notif: any; onClose: () => void }) {
       </div>
       <span style={{ fontSize: '10px', color: 'rgba(9,9,9,0.35)', flexShrink: 0, marginTop: '2px' }}>{notif.time}</span>
     </div>
+  )
+}
+
+function QuickBtn({ label, icon, onClick, color }: { label: string; icon: string; onClick: () => void; color: string }) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '5px',
+        padding: '5px 10px', borderRadius: '8px',
+        border: `1px solid ${color}22`,
+        backgroundColor: `${color}0D`,
+        color, fontSize: '11px', fontWeight: 600,
+        cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      <span>{icon}</span>
+      <span>{label}</span>
+    </button>
   )
 }

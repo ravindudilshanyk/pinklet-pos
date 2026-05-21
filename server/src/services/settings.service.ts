@@ -1,9 +1,9 @@
 import { db } from "../utils/db";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
 
-// Simple key-value settings store using a JSON file approach
-// We'll use a dedicated table approach via a simple model
-const SETTINGS_KEY = "shop_settings";
+const SETTINGS_FILE = path.join(__dirname, "../../data/settings.json");
 
 const defaultSettings = {
   shopName: "Pinklet POS",
@@ -15,49 +15,45 @@ const defaultSettings = {
   taxRate: 0,
   taxName: "Tax",
   receiptFooter: "Thank you for shopping with us! 🎀",
-  receiptLayout: {
-    pageWidthMm: 80,
-    pagePaddingMm: 6,
-    fontSize: 10,
-    headerTitle: "",
-    headerSubtitle: "Thank you for shopping",
-    headerMeta: "",
-    footerText: "",
-    showShopAddress: true,
-    showShopPhone: true,
-    showShopEmail: false,
-    showCustomer: true,
-    showCashier: true,
-    showBillType: true,
-    showStatus: true,
-    showOrderDates: true,
-    showAdvancePayment: true,
-    showDiscountColumn: true,
-    showTaxRow: true,
-    showLoyaltyUsed: true,
-    showPaymentDetails: true,
-    showSavings: true,
-    showCoinsEarned: true,
-    showNote: true,
-  },
   loyaltyCoinsPerAmount: 1000,
   coinValue: 1,
   minBillForRedemption: 200,
 };
 
-// Store settings in a simple way using the DB
-let cachedSettings: any = null;
+const readSettings = (): any => {
+  try {
+    if (!fs.existsSync(path.dirname(SETTINGS_FILE))) {
+      fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
+    }
+    if (!fs.existsSync(SETTINGS_FILE)) return defaultSettings;
+    return {
+      ...defaultSettings,
+      ...JSON.parse(fs.readFileSync(SETTINGS_FILE, "utf-8")),
+    };
+  } catch {
+    return defaultSettings;
+  }
+};
+
+const writeSettings = (data: any) => {
+  try {
+    if (!fs.existsSync(path.dirname(SETTINGS_FILE))) {
+      fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true });
+    }
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error("Failed to write settings:", e);
+  }
+};
 
 export const settingsService = {
-  getShopSettings: async () => {
-    // For now store in memory with defaults
-    // In production this would be a Settings model in DB
-    return cachedSettings || defaultSettings;
-  },
+  getShopSettings: async () => readSettings(),
 
   updateShopSettings: async (data: any) => {
-    cachedSettings = { ...(cachedSettings || defaultSettings), ...data };
-    return cachedSettings;
+    const current = readSettings();
+    const updated = { ...current, ...data };
+    writeSettings(updated);
+    return updated;
   },
 
   getCashiers: async () => {

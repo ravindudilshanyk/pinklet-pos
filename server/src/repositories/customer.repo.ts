@@ -7,9 +7,14 @@ export const customerRepo = {
       include: {
         _count: { select: { bills: true } },
         bills: {
-          select: { total: true, createdAt: true },
+          select: {
+            total: true,
+            createdAt: true,
+            type: true,
+            status: true,
+            deliveryDate: true,
+          },
           orderBy: { createdAt: "desc" },
-          take: 1,
         },
       },
     });

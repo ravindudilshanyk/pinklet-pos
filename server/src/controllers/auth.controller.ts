@@ -236,7 +236,7 @@ export const authController = {
 
   sendChangePasswordOTP: async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = (req as any).user?.userId;
       const result = await authService.sendChangePasswordOTP(userId);
       sendSuccess(res, result);
     } catch (err: any) {
@@ -249,7 +249,7 @@ export const authController = {
 
   changePasswordWithOTP: async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user?.id;
+      const userId = (req as any).user?.userId;
       const { otp, newPassword, confirmPassword } = req.body;
       if (!otp || !newPassword)
         return sendError(

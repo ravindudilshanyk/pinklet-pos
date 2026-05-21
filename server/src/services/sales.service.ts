@@ -212,15 +212,23 @@ export const salesService = {
     const bill = await db.bill.findUnique({ where: { id } });
     if (!bill) throw new Error("Bill not found");
 
-    const newAdvance = (bill.advancePayment || 0) + amount;
+    const isRealPayment = amount >= 1;
+    const newAdvance = isRealPayment
+      ? (bill.advancePayment || 0) + amount
+      : bill.advancePayment || 0;
+
+    const existingNote = bill.note || "";
+    const newNote = note
+      ? existingNote
+        ? `${existingNote} | ${note}`
+        : note
+      : existingNote;
 
     return db.bill.update({
       where: { id },
       data: {
         advancePayment: newAdvance,
-        note: note
-          ? `${bill.note || ""} | Payment: Rs.${amount} (${paymentMethod}) - ${note}`
-          : bill.note,
+        note: newNote,
       },
       include: {
         customer: {

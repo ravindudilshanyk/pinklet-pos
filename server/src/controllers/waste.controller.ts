@@ -28,7 +28,7 @@ export const wasteController = {
   create: async (req: Request, res: Response) => {
     try {
       const { itemId, quantity, reason, note } = req.body;
-      if (!itemId || !quantity || !reason) {
+      if (!itemId || reason == null) {
         return sendError(
           res,
           "itemId, quantity and reason are required",
@@ -36,42 +36,54 @@ export const wasteController = {
           400,
         );
       }
+      // Validate quantity
+      const qty = Number(quantity);
+      if (!Number.isFinite(qty) || !Number.isInteger(qty) || qty <= 0) {
+        return sendError(res, "Quantity must be a positive integer", "VALIDATION_ERROR", 400);
+      }
 
-      // Get item to calculate cost
+      // Get item to calculate cost and validate stock
       const item = await db.item.findUnique({ where: { id: itemId } });
       if (!item) return sendError(res, "Item not found", "NOT_FOUND", 404);
+      if (typeof item.stock === "number" && qty > item.stock) {
+        return sendError(res, "Quantity exceeds available stock", "VALIDATION_ERROR", 400);
+      }
 
-      const cost = item.buyingPrice * quantity;
+      const cost = item.buyingPrice * qty;
 
-      // Create waste log
-      const log = await db.wasteLog.create({
-        data: { itemId, quantity, reason, note, cost },
-        include: {
-          item: {
-            select: {
-              id: true,
-              name: true,
-              sellingPrice: true,
-              buyingPrice: true,
+      // Create waste log, update stock and record movement inside a transaction
+      const log = await db.$transaction(async (tx) => {
+        const created = await tx.wasteLog.create({
+          data: { itemId, quantity: qty, reason, note, cost },
+          include: {
+            item: {
+              select: {
+                id: true,
+                name: true,
+                sellingPrice: true,
+                buyingPrice: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      // Deduct from stock
-      await db.item.update({
-        where: { id: itemId },
-        data: { stock: { decrement: quantity } },
-      });
+        await tx.item.update({ where: { id: itemId }, data: { stock: { decrement: qty } } });
 
-      // Record stock movement
-      await db.stockMovement.create({
-        data: {
-          itemId,
-          type: "waste",
-          quantity: -quantity,
-          note: `Waste: ${reason}${note ? " — " + note : ""}`,
-        },
+        // Test hook: force a failure after stock mutation to verify rollback.
+        if (process.env.WASTE_TEST_FAIL_AFTER_STOCK === "1") {
+          throw new Error("TEST_FAIL_AFTER_WASTE_STOCK");
+        }
+
+        await tx.stockMovement.create({
+          data: {
+            itemId,
+            type: "waste",
+            quantity: -qty,
+            note: `Waste: ${reason}${note ? " — " + note : ""}`,
+          },
+        });
+
+        return created;
       });
 
       sendSuccess(res, log, 201);

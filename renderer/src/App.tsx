@@ -13,56 +13,73 @@ import Reports from "@/pages/Reports";
 import Customers from "@/pages/Customers";
 import Settings from "@/pages/Settings";
 import PasswordLogin from "./pages/auth/PasswordLogin";
-import OwnerLogin from "@/pages/auth/OwnerLogin";
 import AppShell from "@/components/layout/AppShell";
 import PreOrders from '@/pages/PreOrders'
 import ForgotPassword from '@/pages/auth/ForgotPassword'
 import ChangePassword from '@/pages/auth/ChangePassword'
-import { AuthGuard } from "./router/guards";
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const [ownerExists, setOwnerExists] = useState<boolean | null>(null);
+  const { token } = useAuthStore()
+  const [setupComplete, setSetupComplete] = useState<boolean | null>(null)
 
   useEffect(() => {
-    authService.getSetupStatus().then((status) => {
-      setOwnerExists(status.ownerExists);
-    });
-  }, []);
+    let isActive = true
 
-  if (ownerExists === null) {
+    authService
+      .getSetupStatus()
+      .then(({ setupComplete }) => {
+        if (isActive) {
+          setSetupComplete(setupComplete)
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setSetupComplete(false)
+        }
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [])
+
+  // Loading
+  if (setupComplete === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400">Loading...</p>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF0F5', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#EE2D7C', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '22px' }}>🎀</div>
+          <p style={{ color: 'rgba(9,9,9,0.45)', fontSize: '14px' }}>Starting Pinklet POS...</p>
+        </div>
       </div>
-    );
+    )
   }
 
-  if (!ownerExists) {
+  // No owner yet — show setup
+  if (!setupComplete) {
     return (
       <Routes>
-        <Route path="/auth/owner-login" element={<OwnerLogin />} />
-        <Route path="*" element={<CreateOwner />} />
+        <Route path="/create-owner" element={<CreateOwner />} />
+        <Route path="*" element={<Navigate to="/create-owner" replace />} />
       </Routes>
-    );
+    )
   }
 
-  if (!isAuthenticated) {
+  // Owner exists but not logged in
+  if (!token) {
     return (
       <Routes>
-        <AuthGuard>
-          <Route path="/auth" element={<AccountSelect />} />
-          <Route path="/auth/login" element={<PasswordLogin />} />
-          <Route path="/auth/owner-login" element={<OwnerLogin />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="*" element={<Navigate to="/auth" replace />} />
-        </AuthGuard>
+        <Route path="/auth" element={<AccountSelect />} />
+        <Route path="/auth/login" element={<PasswordLogin />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>
-    );
+    )
   }
 
+  // Logged in — show main app
   return (
     <Routes>
       <Route element={<AppShell />}>
@@ -79,7 +96,7 @@ function AppRoutes() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-  );
+  )
 }
 
 export default function App() {
@@ -89,5 +106,5 @@ export default function App() {
         <AppRoutes />
       </BrowserRouter>
     </QueryClientProvider>
-  );
+  )
 }

@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useBillingStore } from "@/stores/billingStore";
 import { billService } from "@/services/billing.service";
 import ItemGrid from "@/components/billing/ItemGrid";
 import BillPanel from "@/components/billing/BillPanel";
 import CustomItemModal from "@/components/billing/CustomItemModal";
+import { useBillingStore } from "@/stores/billingStore";
 
 export default function MakeBill() {
   const [search, setSearch] = useState("");
@@ -12,7 +12,10 @@ export default function MakeBill() {
     string | undefined
   >();
   const [showCustomItem, setShowCustomItem] = useState(false);
+  const [selectedItemIndex, setSelectedItemIndex] = useState(0);
   const searchRef = useRef<HTMLInputElement>(null);
+  const addItem = useBillingStore((s) => s.addItem);
+  const setFocusItemId = useBillingStore((s) => s.setFocusItemId);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -25,17 +28,85 @@ export default function MakeBill() {
     staleTime: 30000,
   });
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === "F1") {
+  const visibleItems = items;
+
+  const addFirstMatchingItem = () => {
+    const query = search.trim();
+    if (!query) return;
+
+    const exactBarcodeMatch = items.find((item: any) => String(item.barcode || "").trim() === query);
+    const exactNameMatch = items.find((item: any) => String(item.name || "").trim().toLowerCase() === query.toLowerCase());
+    const candidate = exactBarcodeMatch || exactNameMatch || (items.length === 1 ? items[0] : null);
+
+    if (!candidate) return;
+
+    addItem({
+      itemId: candidate.id,
+      name: candidate.name,
+      unitPrice: candidate.sellingPrice,
+      buyingPrice: candidate.buyingPrice,
+      marketPrice: candidate.marketPrice,
+      quantity: 1,
+      stock: candidate.stock,
+    });
+    setFocusItemId(candidate.id);
+    setSearch("");
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
       e.preventDefault();
-      searchRef.current?.focus();
+      if (visibleItems.length > 0) {
+        setSelectedItemIndex((current) => Math.min(current + 1, visibleItems.length - 1));
+      }
+      return;
     }
-  }, []);
+
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (visibleItems.length > 0) {
+        setSelectedItemIndex((current) => Math.max(current - 1, 0));
+      }
+      return;
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (visibleItems.length === 0) return;
+
+      const selectedItem = visibleItems[selectedItemIndex] || visibleItems[0];
+      if (!selectedItem) return;
+
+      addItem({
+        itemId: selectedItem.id,
+        name: selectedItem.name,
+        unitPrice: selectedItem.sellingPrice,
+        buyingPrice: selectedItem.buyingPrice,
+        marketPrice: selectedItem.marketPrice,
+        quantity: 1,
+        stock: selectedItem.stock,
+      });
+      setFocusItemId(selectedItem.id);
+      setSearch("");
+      setSelectedItemIndex(0);
+    }
+  };
 
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+    setSelectedItemIndex(0);
+  }, [search, selectedCategory]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F1') {
+        e.preventDefault()
+        const searchInput = document.querySelector('#item-search-input') as HTMLInputElement
+        searchInput?.focus()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     <div
@@ -83,9 +154,11 @@ export default function MakeBill() {
           </svg>
           <input
             ref={searchRef}
+            id="item-search-input"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
             placeholder="Search items by name or barcode... (F1)"
             style={{
               flex: 1,
@@ -178,7 +251,24 @@ export default function MakeBill() {
 
         {/* Item grid */}
         <div style={{ flex: 1, overflowY: "auto" }}>
-          <ItemGrid items={items} loading={isLoading} />
+          <ItemGrid
+            items={visibleItems}
+            loading={isLoading}
+            selectedItemIndex={selectedItemIndex}
+            onItemHover={(index) => setSelectedItemIndex(index)}
+            onItemSelect={(item) => {
+              addItem({
+                itemId: item.id,
+                name: item.name,
+                unitPrice: item.sellingPrice,
+                buyingPrice: item.buyingPrice,
+                marketPrice: item.marketPrice,
+                quantity: 1,
+                stock: item.stock,
+              });
+              setFocusItemId(item.id);
+            }}
+          />
         </div>
       </div>
 

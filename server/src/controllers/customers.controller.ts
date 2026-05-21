@@ -6,12 +6,60 @@ export const customersController = {
   getAll: async (req: Request, res: Response) => {
     try {
       const customers = await customerRepo.findAll();
-      const withSpent = await Promise.all(
-        customers.map(async (c) => ({
-          ...c,
-          totalSpent: await customerRepo.getTotalSpent(c.id),
-        })),
-      );
+      const now = new Date();
+      const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const next3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+      const withSpent = customers.map((c) => ({
+        ...c,
+        totalSpent: c.bills.reduce((sum, b) => sum + b.total, 0),
+        lastVisit: c.bills[0]?.createdAt || null,
+      }))
+        .map((c) => {
+          const activePreOrderCount = c.bills.filter(
+            (b) =>
+              b.type === "pre_order" &&
+              ["pending", "confirmed", "ready"].includes(b.status || ""),
+          ).length;
+
+          const dueSoonPreOrderCount = c.bills.filter((b) => {
+            if (
+              b.type !== "pre_order" ||
+              !["pending", "confirmed", "ready"].includes(b.status || "") ||
+              !b.deliveryDate
+            ) {
+              return false;
+            }
+            const due = new Date(b.deliveryDate);
+            return due >= now && due <= next3Days;
+          }).length;
+
+          const recentVisitCount30d = c.bills.filter(
+            (b) => new Date(b.createdAt) >= last30Days,
+          ).length;
+
+          const hasRecentVisit = c.lastVisit
+            ? new Date(c.lastVisit) >= last30Days
+            : false;
+
+          const relevanceScore =
+            (hasRecentVisit ? 120 : 0) +
+            recentVisitCount30d * 25 +
+            activePreOrderCount * 50 +
+            dueSoonPreOrderCount * 80 +
+            Math.min((c.totalSpent || 0) / 500, 60) +
+            Math.min((c._count?.bills || 0) * 4, 40) +
+            Math.min((c.points || 0) / 20, 30);
+
+          return {
+            ...c,
+            activePreOrderCount,
+            dueSoonPreOrderCount,
+            recentVisitCount30d,
+            relevanceScore,
+          };
+        });
+
       sendSuccess(res, withSpent);
     } catch {
       sendError(res, "Failed to fetch customers", "FETCH_ERROR", 500);

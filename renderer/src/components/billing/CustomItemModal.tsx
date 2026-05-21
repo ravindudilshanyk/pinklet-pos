@@ -40,6 +40,20 @@ const inputRow: React.CSSProperties = {
   overflow: "hidden",
 };
 
+const twoColumnRow: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gap: "12px",
+  marginBottom: "12px",
+};
+
+const pillWrap: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "8px",
+  marginBottom: "12px",
+};
+
 const inputInner: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
@@ -123,11 +137,11 @@ export default function CustomItemModal({ onClose }: Props) {
       discount:
         discountAmount > 0
           ? {
-              type: "amount",
-              value: discountAmount,
-              label: `Rs. ${discountAmount} Off`,
-              amount: discountAmount,
-            }
+            type: "amount",
+            value: discountAmount,
+            label: `Rs. ${discountAmount} Off`,
+            amount: discountAmount,
+          }
           : undefined,
     });
 
@@ -214,7 +228,7 @@ export default function CustomItemModal({ onClose }: Props) {
         </div>
 
         {/* Scrollable body */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px 22px" }}>
           {/* Item Name */}
           <p style={labelStyle}>Item Name *</p>
           <div style={inputRow}>
@@ -234,10 +248,7 @@ export default function CustomItemModal({ onClose }: Props) {
           <p style={labelStyle}>Cake Type</p>
           <div
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "7px",
-              marginBottom: "12px",
+              ...pillWrap,
             }}
           >
             {CAKE_TYPES.map((type) => (
@@ -275,10 +286,7 @@ export default function CustomItemModal({ onClose }: Props) {
           <p style={labelStyle}>Flavour</p>
           <div
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "7px",
-              marginBottom: "12px",
+              ...pillWrap,
             }}
           >
             {FLAVOURS.map((f) => (
@@ -310,11 +318,19 @@ export default function CustomItemModal({ onClose }: Props) {
           </div>
 
           {/* Weight + Quantity row */}
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div style={twoColumnRow}>
             <div style={{ flex: 1 }}>
               <p style={labelStyle}>Weight (kg)</p>
               <div style={inputRow}>
                 <div style={inputInner}>
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      color: "rgba(9,9,9,0.35)",
+                      fontWeight: 500,
+                    }}
+                  >kg
+                  </span>
                   <input
                     type="number"
                     value={form.weight}
@@ -322,19 +338,10 @@ export default function CustomItemModal({ onClose }: Props) {
                     placeholder="e.g. 1.5"
                     style={inputStyle}
                   />
-                  <span
-                    style={{
-                      fontSize: "13px",
-                      color: "rgba(9,9,9,0.35)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    kg
-                  </span>
                 </div>
               </div>
             </div>
-            <div style={{ flex: 1 }}>
+            <div>
               <p style={labelStyle}>Quantity</p>
               <div style={inputRow}>
                 <div style={inputInner}>
@@ -351,8 +358,8 @@ export default function CustomItemModal({ onClose }: Props) {
           </div>
 
           {/* Selling Price + Buying Price row */}
-          <div style={{ display: "flex", gap: "12px" }}>
-            <div style={{ flex: 1 }}>
+          <div style={twoColumnRow}>
+            <div>
               <p style={labelStyle}>Selling Price (Rs.) *</p>
               <div style={inputRow}>
                 <div style={inputInner}>
@@ -375,7 +382,7 @@ export default function CustomItemModal({ onClose }: Props) {
                 </div>
               </div>
             </div>
-            <div style={{ flex: 1 }}>
+            <div>
               <p style={labelStyle}>Cost Price (Rs.)</p>
               <div style={inputRow}>
                 <div style={inputInner}>
@@ -490,7 +497,7 @@ export default function CustomItemModal({ onClose }: Props) {
                 backgroundColor: "rgba(238,45,124,0.04)",
                 border: "1px solid rgba(238,45,124,0.15)",
                 borderRadius: "14px",
-                padding: "14px",
+                padding: "14px 14px 12px",
                 marginTop: "4px",
               }}
             >
@@ -511,6 +518,7 @@ export default function CustomItemModal({ onClose }: Props) {
                   display: "flex",
                   justifyContent: "space-between",
                   marginBottom: "4px",
+                  gap: "12px",
                 }}
               >
                 <span style={{ fontSize: "13px", color: "rgba(9,9,9,0.55)" }}>
@@ -552,6 +560,7 @@ export default function CustomItemModal({ onClose }: Props) {
                   paddingTop: "8px",
                   display: "flex",
                   justifyContent: "space-between",
+                  gap: "12px",
                 }}
               >
                 <span

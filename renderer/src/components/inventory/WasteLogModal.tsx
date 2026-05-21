@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { itemsService } from '@/services/items.service'
 
 interface Props {
+    item?: any        // ← pre-selected item (from row button)
     onClose: () => void
 }
 
@@ -19,12 +20,12 @@ const WASTE_REASONS = [
     'Other reason',
 ]
 
-export default function WasteLogModal({ onClose }: Props) {
+export default function WasteLogModal({ item: preSelectedItem, onClose }: Props) {
     const queryClient = useQueryClient()
-    const [view, setView] = useState<'log' | 'history'>('log')
 
     // Form state
-    const [itemId, setItemId] = useState('')
+    const [itemId, setItemId] = useState(preSelectedItem?.id || '')
+    const [view, setView] = useState<'log' | 'history'>(preSelectedItem ? 'log' : 'log')
     const [quantity, setQuantity] = useState('1')
     const [reason, setReason] = useState('')
     const [note, setNote] = useState('')
@@ -143,19 +144,33 @@ export default function WasteLogModal({ onClose }: Props) {
                     {view === 'log' ? (
                         <>
                             {/* Item select */}
+                            {/* Item select */}
                             <label style={labelStyle}>Item *</label>
-                            <select
-                                value={itemId}
-                                onChange={(e) => setItemId(e.target.value)}
-                                style={{ ...inputStyle, cursor: 'pointer', marginBottom: '14px' }}
-                            >
-                                <option value="">Select item...</option>
-                                {items.map((item: any) => (
-                                    <option key={item.id} value={item.id}>
-                                        {item.name} (Stock: {item.stock})
-                                    </option>
-                                ))}
-                            </select>
+                            {preSelectedItem ? (
+                                // Show selected item info — not changeable
+                                <div style={{ backgroundColor: 'rgba(238,45,124,0.06)', border: '1px solid rgba(238,45,124,0.20)', borderRadius: '12px', padding: '12px 16px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <span style={{ fontSize: '16px' }}>📦</span>
+                                    <div>
+                                        <p style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#090909' }}>{preSelectedItem.name}</p>
+                                        <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'rgba(9,9,9,0.45)' }}>
+                                            Current stock: {preSelectedItem.stock} · Cost: Rs. {preSelectedItem.buyingPrice}
+                                        </p>
+                                    </div>
+                                </div>
+                            ) : (
+                                <select
+                                    value={itemId}
+                                    onChange={(e) => setItemId(e.target.value)}
+                                    style={{ ...inputStyle, cursor: 'pointer', marginBottom: '14px' }}
+                                >
+                                    <option value="">Select item...</option>
+                                    {items.map((item: any) => (
+                                        <option key={item.id} value={item.id}>
+                                            {item.name} (Stock: {item.stock})
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
 
                             {/* Selected item info */}
                             {selectedItem && (
