@@ -59,8 +59,8 @@ function AppRoutes() {
       // Alt + number navigation
       if (e.altKey && token) {
         const nav: Record<string, string> = {
-          '1': '/', '2': '/bill', '3': '/items',
-          '4': '/customers', '5': '/pre-orders',
+          '1': '/', '2': '/bill', '3': '/pre-orders',
+          '4': '/items', '5': '/sales', '6': '/customers',
         }
         if (nav[e.key]) {
           e.preventDefault()

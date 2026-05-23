@@ -33,11 +33,12 @@ const SHORTCUTS: ShortcutGroup[] = [
         shortcuts: [
             { key: 'Alt + 1', description: 'Go to Overview' },
             { key: 'Alt + 2', description: 'Go to Make Bill' },
-            { key: 'Alt + 3', description: 'Go to Items' },
-            { key: 'Alt + 4', description: 'Go to Customers' },
-            { key: 'Alt + 5', description: 'Go to Pre-Orders' },
+            { key: 'Alt + 3', description: 'Go to Pre-Orders' },
+            { key: 'Alt + 4', description: 'Go to Items' },
+            { key: 'Alt + 5', description: 'Go to Sales History' },
+            { key: 'Alt + 6', description: 'Go to Customers' },
         ],
-    },
+    }, 
     {
         title: 'General',
         icon: '⌨',

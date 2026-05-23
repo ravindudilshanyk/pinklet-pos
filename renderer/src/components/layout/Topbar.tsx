@@ -274,21 +274,7 @@ export default function Topbar() {
           <QuickBtn label="Pre-Orders" icon="📋" onClick={() => navigate('/pre-orders')} color="#f59e0b" />
         </div>
 
-        <button
-          onClick={() => setShowShortcuts(true)}
-          title="Keyboard Shortcuts (?)"
-          style={{
-            width: '36px', height: '36px', borderRadius: '10px',
-            border: '1px solid rgba(9,9,9,0.08)',
-            backgroundColor: 'white', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '14px', color: 'rgba(9,9,9,0.50)',
-            fontWeight: 700, fontFamily: 'monospace',
-            flexShrink: 0,
-          }}
-        >
-          ?
-        </button>
+
 
         {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
 
@@ -316,44 +302,6 @@ export default function Topbar() {
             </span>
           </div>
         )}
-        {/* Birthdays */}
-        {notifications.filter(n => n.type === 'birthday').length > 0 && (
-          <div>
-            <p style={{ margin: 0, padding: '10px 18px 6px', fontSize: '10px', fontWeight: 700, color: 'rgba(9,9,9,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              🎂 Birthdays
-            </p>
-            {notifications.filter(n => n.type === 'birthday').map((notif) => (
-              <div key={notif.id} style={{ position: 'relative' }}>
-                <NotifItem notif={notif} onClose={() => setShowNotifications(false)} />
-                {/* WhatsApp birthday wish button */}
-                {notif.whatsapp && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      const number = notif.whatsapp.replace(/[\s\-\+\(\)]/g, '')
-                      const finalNumber = number.startsWith('0') ? '94' + number.slice(1) : number
-                      const message = encodeURIComponent(
-                        `🎂 Happy Birthday ${notif.customerName}! 🎉\n\nWishing you a wonderful day filled with joy!\n\nWith love from Pinklet 🎀`
-                      )
-                      window.open(`https://wa.me/${finalNumber}?text=${message}`, '_blank')
-                      setShowNotifications(false)
-                    }}
-                    style={{
-                      position: 'absolute', right: '12px', top: '50%',
-                      transform: 'translateY(-50%)',
-                      padding: '4px 8px', borderRadius: '6px',
-                      border: 'none', backgroundColor: '#25D366',
-                      color: 'white', fontSize: '10px', fontWeight: 600,
-                      cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-                    }}
-                  >
-                    💬 Wish
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Divider */}
@@ -373,6 +321,22 @@ export default function Topbar() {
         </div>
 
       </div>
+
+      <button
+        onClick={() => setShowShortcuts(true)}
+        title="Keyboard Shortcuts (?)"
+        style={{
+          width: '36px', height: '36px', borderRadius: '10px',
+          border: '1px solid rgba(9,9,9,0.08)',
+          backgroundColor: 'white', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '14px', color: 'rgba(9,9,9,0.50)',
+          fontWeight: 700, fontFamily: 'monospace',
+          flexShrink: 0,
+        }}
+      >
+        ?
+      </button>
 
       {/* Notification bell */}
       <button
@@ -476,6 +440,44 @@ export default function Topbar() {
                       </p>
                       {notifications.filter(n => n.type === 'low_stock').map((notif) => (
                         <NotifItem key={notif.id} notif={notif} onClose={() => setShowNotifications(false)} onSeen={() => markNotificationSeen(String(notif.id))} />
+                      ))}
+                    </div>
+                  )}
+                  {/* Birthdays */}
+                  {notifications.filter(n => n.type === 'birthday').length > 0 && (
+                    <div>
+                      <p style={{ margin: 0, padding: '10px 18px 6px', fontSize: '10px', fontWeight: 700, color: 'rgba(9,9,9,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        🎂 Birthdays
+                      </p>
+                      {notifications.filter(n => n.type === 'birthday').map((notif) => (
+                        <div key={notif.id} style={{ position: 'relative' }}>
+                          <NotifItem notif={notif} onClose={() => setShowNotifications(false)} />
+                          {/* WhatsApp birthday wish button */}
+                          {notif.whatsapp && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const number = notif.whatsapp.replace(/[\s\-\+\(\)]/g, '')
+                                const finalNumber = number.startsWith('0') ? '94' + number.slice(1) : number
+                                const message = encodeURIComponent(
+                                  `🎂 Happy Birthday ${notif.customerName}! 🎉\n\nWishing you a wonderful day filled with joy!\n\nWith love from Pinklet 🎀`
+                                )
+                                window.open(`https://wa.me/${finalNumber}?text=${message}`, '_blank')
+                                setShowNotifications(false)
+                              }}
+                              style={{
+                                position: 'absolute', right: '12px', top: '50%',
+                                transform: 'translateY(-50%)',
+                                padding: '4px 8px', borderRadius: '6px',
+                                border: 'none', backgroundColor: '#25D366',
+                                color: 'white', fontSize: '10px', fontWeight: 600,
+                                cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                              }}
+                            >
+                              💬 Wish
+                            </button>
+                          )}
+                        </div>
                       ))}
                     </div>
                   )}

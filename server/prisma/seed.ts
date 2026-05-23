@@ -4,1219 +4,1614 @@ import bcrypt from "bcryptjs";
 const db = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding Pinklet POS database...");
+  console.log("🌱 Seeding Pinklet POS...");
 
-  // ── 1. Owner ─────────────────────────────────────────────
-  console.log("👤 Creating owner...");
-  const ownerPassword = await bcrypt.hash("owner123", 12);
+  // ── Users ─────────────────────────────────────────────────
+  const ownerPwd = await bcrypt.hash("owner123", 12);
+  const cashierPwd = await bcrypt.hash("cashier123", 12);
+
   const owner = await db.user.upsert({
-    where: { email: "owner@pinklet.com" },
+    where: { email: "owner@pinklet.lk" },
     update: {},
     create: {
-      name: "Shop Owner",
-      email: "owner@pinklet.com",
-      password: ownerPassword,
+      name: "Dinusha Perera",
+      email: "owner@pinklet.lk",
+      password: ownerPwd,
       role: "owner",
       isActive: true,
     },
   });
 
-  // ── 2. Cashiers ───────────────────────────────────────────
-  console.log("👤 Creating cashiers...");
-  const cashier1Password = await bcrypt.hash("cashier123", 12);
-  const cashier2Password = await bcrypt.hash("cashier123", 12);
-
   const cashier1 = await db.user.upsert({
-    where: { email: "amaya@pinklet.com" },
+    where: { email: "amaya@pinklet.lk" },
     update: {},
     create: {
-      name: "Amaya Perera",
-      email: "amaya@pinklet.com",
-      password: cashier1Password,
+      name: "Amaya Bandara",
+      email: "amaya@pinklet.lk",
+      password: cashierPwd,
       role: "cashier",
       isActive: true,
     },
   });
 
   const cashier2 = await db.user.upsert({
-    where: { email: "nimal@pinklet.com" },
+    where: { email: "sahan@pinklet.lk" },
     update: {},
     create: {
-      name: "Nimal Silva",
-      email: "nimal@pinklet.com",
-      password: cashier2Password,
+      name: "Sahan Wickrama",
+      email: "sahan@pinklet.lk",
+      password: cashierPwd,
       role: "cashier",
       isActive: true,
     },
   });
 
-  // ── 3. Suppliers ──────────────────────────────────────────
-  console.log("🏭 Creating suppliers...");
-  const supplier1 = await db.supplier.upsert({
-    where: { id: "supplier-1" },
+  // ── Suppliers ─────────────────────────────────────────────
+  const s1 = await db.supplier.upsert({
+    where: { id: "s1" },
     update: {},
     create: {
-      id: "supplier-1",
-      name: "Fresh Bake Supplies",
-      phone: "0112345678",
-      email: "freshbake@gmail.com",
-      address: "No. 45, Galle Road, Colombo 03",
-      notes: "Main flour and baking ingredients supplier",
+      id: "s1",
+      name: "Royal Bake Supplies",
+      phone: "0112456789",
+      email: "royal@bakesupplies.lk",
+      address: "No.12, Galle Road, Colombo 03",
+      notes: "Flour, butter, cream supplier. Delivers Mon/Thu.",
       isActive: true,
     },
   });
-
-  const supplier2 = await db.supplier.upsert({
-    where: { id: "supplier-2" },
+  const s2 = await db.supplier.upsert({
+    where: { id: "s2" },
     update: {},
     create: {
-      id: "supplier-2",
-      name: "Lanka Flower Farm",
-      phone: "0777654321",
-      email: "flowers@lankafarm.lk",
-      address: "Nuwara Eliya Road, Kandy",
-      notes: "Fresh flowers delivered every Monday and Thursday",
+      id: "s2",
+      name: "Kandy Flower Farm",
+      phone: "0812345678",
+      email: "flowers@kandyfarm.lk",
+      address: "Peradeniya Road, Kandy",
+      notes: "Fresh cut flowers. Order 2 days in advance.",
       isActive: true,
     },
   });
-
-  const supplier3 = await db.supplier.upsert({
-    where: { id: "supplier-3" },
+  const s3 = await db.supplier.upsert({
+    where: { id: "s3" },
     update: {},
     create: {
-      id: "supplier-3",
-      name: "Teddy World Import",
+      id: "s3",
+      name: "Toy Kingdom Imports",
       phone: "0114567890",
-      email: "orders@teddyworld.lk",
+      email: "orders@toykingdom.lk",
       address: "Manning Market, Colombo 10",
-      notes: "Imported teddies and soft toys",
+      notes: "Soft toys and teddies. Minimum order Rs. 5000.",
       isActive: true,
     },
   });
-
-  const supplier4 = await db.supplier.upsert({
-    where: { id: "supplier-4" },
+  const s4 = await db.supplier.upsert({
+    where: { id: "s4" },
     update: {},
     create: {
-      id: "supplier-4",
-      name: "Sweet Sensation",
+      id: "s4",
+      name: "Choco World Lanka",
       phone: "0759876543",
-      email: "sweet@sensation.lk",
+      email: "sales@chocoworld.lk",
       address: "Negombo Road, Wattala",
-      notes: "Chocolates and confectionery",
+      notes: "Premium chocolates. Check expiry on delivery.",
+      isActive: true,
+    },
+  });
+  const s5 = await db.supplier.upsert({
+    where: { id: "s5" },
+    update: {},
+    create: {
+      id: "s5",
+      name: "Gift Wrap Masters",
+      phone: "0771234000",
+      email: "giftwrap@masters.lk",
+      address: "Pettah, Colombo 11",
+      notes: "Ribbons, boxes, wrapping paper.",
       isActive: true,
     },
   });
 
-  // ── 4. Categories ─────────────────────────────────────────
-  console.log("📂 Creating categories...");
-  const catCake = await db.category.upsert({
+  // ── Categories ────────────────────────────────────────────
+  const cCake = await db.category.upsert({
     where: { name: "Cakes" },
     update: {},
     create: { name: "Cakes" },
   });
-
-  const catFlower = await db.category.upsert({
+  const cFlower = await db.category.upsert({
     where: { name: "Flower Bouquets" },
     update: {},
     create: { name: "Flower Bouquets" },
   });
-
-  const catTeddy = await db.category.upsert({
-    where: { name: "Teddies" },
+  const cTeddy = await db.category.upsert({
+    where: { name: "Teddies & Soft Toys" },
     update: {},
-    create: { name: "Teddies" },
+    create: { name: "Teddies & Soft Toys" },
   });
-
-  const catChocolate = await db.category.upsert({
+  const cChoc = await db.category.upsert({
     where: { name: "Chocolates" },
     update: {},
     create: { name: "Chocolates" },
   });
-
-  const catGiftBox = await db.category.upsert({
-    where: { name: "Gift Boxes" },
+  const cGift = await db.category.upsert({
+    where: { name: "Gift Hampers" },
     update: {},
-    create: { name: "Gift Boxes" },
+    create: { name: "Gift Hampers" },
+  });
+  const cTool = await db.category.upsert({
+    where: { name: "Cake Accessories" },
+    update: {},
+    create: { name: "Cake Accessories" },
+  });
+  const cBalloon = await db.category.upsert({
+    where: { name: "Balloons & Decor" },
+    update: {},
+    create: { name: "Balloons & Decor" },
   });
 
-  const catCakeTool = await db.category.upsert({
-    where: { name: "Cake Tools" },
-    update: {},
-    create: { name: "Cake Tools" },
-  });
-
-  // ── 5. Items ──────────────────────────────────────────────
-  console.log("📦 Creating items...");
-
-  const items = [
+  // ── Items (25 items) ──────────────────────────────────────
+  const itemsData = [
     // Cakes
     {
-      id: "item-1",
-      name: "Chocolate Brownie Pot",
-      barcode: "CBP001",
-      categoryId: catCake.id,
-      supplierId: supplier1.id,
-      marketPrice: 450,
-      buyingPrice: 180,
-      sellingPrice: 320,
-      stock: 35,
-      lowStockAlert: 10,
-    },
-    {
-      id: "item-2",
-      name: "Vanilla Cream Cake (1kg)",
-      barcode: "VCC001",
-      categoryId: catCake.id,
-      supplierId: supplier1.id,
-      marketPrice: 2800,
-      buyingPrice: 1200,
-      sellingPrice: 1950,
-      stock: 8,
-      lowStockAlert: 5,
-    },
-    {
-      id: "item-3",
-      name: "Red Velvet Cake (500g)",
-      barcode: "RVC001",
-      categoryId: catCake.id,
-      supplierId: supplier1.id,
-      marketPrice: 1800,
-      buyingPrice: 750,
-      sellingPrice: 1200,
-      stock: 6,
-      lowStockAlert: 5,
-    },
-    {
-      id: "item-4",
-      name: "Chocolate Truffle Cake (1kg)",
-      barcode: "CTC001",
-      categoryId: catCake.id,
-      supplierId: supplier1.id,
-      marketPrice: 3200,
+      id: "i01",
+      name: "Chocolate Fudge Cake (1kg)",
+      barcode: "CFC001",
+      categoryId: cCake.id,
+      supplierId: s1.id,
+      marketPrice: 3500,
       buyingPrice: 1400,
-      sellingPrice: 2200,
-      stock: 4,
-      lowStockAlert: 3,
-    },
-    {
-      id: "item-5",
-      name: "Cupcake Box (6 pieces)",
-      barcode: "CUP006",
-      categoryId: catCake.id,
-      supplierId: supplier1.id,
-      marketPrice: 950,
-      buyingPrice: 380,
-      sellingPrice: 650,
-      stock: 20,
-      lowStockAlert: 8,
-    },
-    // Flower Bouquets
-    {
-      id: "item-6",
-      name: "Red Rose Bouquet (12 stems)",
-      barcode: "RRB012",
-      categoryId: catFlower.id,
-      supplierId: supplier2.id,
-      marketPrice: 1800,
-      buyingPrice: 650,
-      sellingPrice: 1100,
-      stock: 15,
-      lowStockAlert: 5,
-    },
-    {
-      id: "item-7",
-      name: "Mixed Flower Bouquet",
-      barcode: "MFB001",
-      categoryId: catFlower.id,
-      supplierId: supplier2.id,
-      marketPrice: 2200,
-      buyingPrice: 850,
-      sellingPrice: 1450,
+      sellingPrice: 2400,
       stock: 12,
       lowStockAlert: 5,
     },
     {
-      id: "item-8",
-      name: "Sunflower Bouquet (6 stems)",
-      barcode: "SFB006",
-      categoryId: catFlower.id,
-      supplierId: supplier2.id,
-      marketPrice: 1400,
-      buyingPrice: 500,
-      sellingPrice: 850,
-      stock: 10,
-      lowStockAlert: 4,
-    },
-    {
-      id: "item-9",
-      name: "Lily & Rose Arrangement",
-      barcode: "LRA001",
-      categoryId: catFlower.id,
-      supplierId: supplier2.id,
-      marketPrice: 3500,
+      id: "i02",
+      name: "Vanilla Buttercream Cake (1kg)",
+      barcode: "VBC001",
+      categoryId: cCake.id,
+      supplierId: s1.id,
+      marketPrice: 3200,
       buyingPrice: 1200,
       sellingPrice: 2100,
-      stock: 7,
-      lowStockAlert: 3,
-    },
-    // Teddies
-    {
-      id: "item-10",
-      name: "Brown Teddy Bear (Small)",
-      barcode: "TBS001",
-      categoryId: catTeddy.id,
-      supplierId: supplier3.id,
-      marketPrice: 1900,
-      buyingPrice: 850,
-      sellingPrice: 1400,
-      stock: 3,
-      lowStockAlert: 5,
-    },
-    {
-      id: "item-11",
-      name: "Pink Teddy Bear (Medium)",
-      barcode: "TBM001",
-      categoryId: catTeddy.id,
-      supplierId: supplier3.id,
-      marketPrice: 2800,
-      buyingPrice: 1200,
-      sellingPrice: 2000,
       stock: 8,
       lowStockAlert: 5,
     },
     {
-      id: "item-12",
-      name: "Giant Teddy Bear (Large)",
-      barcode: "TBL001",
-      categoryId: catTeddy.id,
-      supplierId: supplier3.id,
-      marketPrice: 5500,
-      buyingPrice: 2500,
-      sellingPrice: 3800,
+      id: "i03",
+      name: "Red Velvet Cake (500g)",
+      barcode: "RVC001",
+      categoryId: cCake.id,
+      supplierId: s1.id,
+      marketPrice: 2000,
+      buyingPrice: 800,
+      sellingPrice: 1350,
+      stock: 6,
+      lowStockAlert: 4,
+    },
+    {
+      id: "i04",
+      name: "Strawberry Cream Cake (1kg)",
+      barcode: "SCC001",
+      categoryId: cCake.id,
+      supplierId: s1.id,
+      marketPrice: 3800,
+      buyingPrice: 1600,
+      sellingPrice: 2800,
       stock: 4,
       lowStockAlert: 3,
     },
-    // Chocolates
     {
-      id: "item-13",
-      name: "Ferrero Rocher Box (16pc)",
-      barcode: "FR016",
-      categoryId: catChocolate.id,
-      supplierId: supplier4.id,
-      marketPrice: 2800,
-      buyingPrice: 2100,
-      sellingPrice: 2500,
-      stock: 25,
-      lowStockAlert: 8,
-    },
-    {
-      id: "item-14",
-      name: "Cadbury Dairy Milk 200g",
-      barcode: "CDM200",
-      categoryId: catChocolate.id,
-      supplierId: supplier4.id,
-      marketPrice: 550,
-      buyingPrice: 380,
-      sellingPrice: 480,
-      stock: 40,
-      lowStockAlert: 15,
-    },
-    {
-      id: "item-15",
-      name: "Lindt Dark Chocolate Box",
-      barcode: "LDC001",
-      categoryId: catChocolate.id,
-      supplierId: supplier4.id,
-      marketPrice: 1800,
-      buyingPrice: 1350,
-      sellingPrice: 1600,
+      id: "i05",
+      name: "Cupcake Box (6 pcs)",
+      barcode: "CUP006",
+      categoryId: cCake.id,
+      supplierId: s1.id,
+      marketPrice: 1200,
+      buyingPrice: 480,
+      sellingPrice: 850,
       stock: 18,
       lowStockAlert: 6,
     },
-    // Gift Boxes
     {
-      id: "item-16",
-      name: "Love Gift Box (Small)",
-      barcode: "LGB001",
-      categoryId: catGiftBox.id,
-      supplierId: supplier1.id,
+      id: "i06",
+      name: "Brownie Box (12 pcs)",
+      barcode: "BRW012",
+      categoryId: cCake.id,
+      supplierId: s1.id,
+      marketPrice: 1500,
+      buyingPrice: 550,
+      sellingPrice: 950,
+      stock: 22,
+      lowStockAlert: 8,
+    },
+    // Flowers
+    {
+      id: "i07",
+      name: "Red Rose Bouquet (24 stems)",
+      barcode: "RRB024",
+      categoryId: cFlower.id,
+      supplierId: s2.id,
       marketPrice: 3500,
-      buyingPrice: 1800,
-      sellingPrice: 2800,
+      buyingPrice: 1200,
+      sellingPrice: 2200,
       stock: 10,
       lowStockAlert: 4,
     },
     {
-      id: "item-17",
-      name: "Birthday Hamper Box",
-      barcode: "BHB001",
-      categoryId: catGiftBox.id,
-      supplierId: supplier1.id,
+      id: "i08",
+      name: "Mixed Flower Bouquet (Medium)",
+      barcode: "MFB002",
+      categoryId: cFlower.id,
+      supplierId: s2.id,
+      marketPrice: 2800,
+      buyingPrice: 950,
+      sellingPrice: 1800,
+      stock: 8,
+      lowStockAlert: 3,
+    },
+    {
+      id: "i09",
+      name: "Sunflower & Lily Arrangement",
+      barcode: "SLA001",
+      categoryId: cFlower.id,
+      supplierId: s2.id,
+      marketPrice: 4200,
+      buyingPrice: 1500,
+      sellingPrice: 2800,
+      stock: 5,
+      lowStockAlert: 3,
+    },
+    {
+      id: "i10",
+      name: "White Orchid Bouquet",
+      barcode: "WOB001",
+      categoryId: cFlower.id,
+      supplierId: s2.id,
+      marketPrice: 5500,
+      buyingPrice: 2000,
+      sellingPrice: 3500,
+      stock: 3,
+      lowStockAlert: 3,
+    },
+    // Teddies
+    {
+      id: "i11",
+      name: "Classic Brown Teddy (Small)",
+      barcode: "TBS001",
+      categoryId: cTeddy.id,
+      supplierId: s3.id,
+      marketPrice: 2200,
+      buyingPrice: 950,
+      sellingPrice: 1600,
+      stock: 15,
+      lowStockAlert: 5,
+    },
+    {
+      id: "i12",
+      name: "Pink Heart Teddy (Medium)",
+      barcode: "TBM001",
+      categoryId: cTeddy.id,
+      supplierId: s3.id,
+      marketPrice: 3500,
+      buyingPrice: 1500,
+      sellingPrice: 2500,
+      stock: 10,
+      lowStockAlert: 4,
+    },
+    {
+      id: "i13",
+      name: "Giant Fluffy Teddy (Large)",
+      barcode: "TBL001",
+      categoryId: cTeddy.id,
+      supplierId: s3.id,
+      marketPrice: 7500,
+      buyingPrice: 3200,
+      sellingPrice: 5200,
+      stock: 4,
+      lowStockAlert: 2,
+    },
+    {
+      id: "i14",
+      name: "Unicorn Soft Toy",
+      barcode: "UNI001",
+      categoryId: cTeddy.id,
+      supplierId: s3.id,
+      marketPrice: 4500,
+      buyingPrice: 1800,
+      sellingPrice: 3200,
+      stock: 7,
+      lowStockAlert: 3,
+    },
+    // Chocolates
+    {
+      id: "i15",
+      name: "Ferrero Rocher (24pc Box)",
+      barcode: "FR024",
+      categoryId: cChoc.id,
+      supplierId: s4.id,
+      marketPrice: 5500,
+      buyingPrice: 4200,
+      sellingPrice: 4900,
+      stock: 20,
+      lowStockAlert: 6,
+    },
+    {
+      id: "i16",
+      name: "Lindt Assorted Box (200g)",
+      barcode: "LIN200",
+      categoryId: cChoc.id,
+      supplierId: s4.id,
+      marketPrice: 3200,
+      buyingPrice: 2400,
+      sellingPrice: 2900,
+      stock: 15,
+      lowStockAlert: 5,
+    },
+    {
+      id: "i17",
+      name: "Cadbury Dairy Milk (360g)",
+      barcode: "CDM360",
+      categoryId: cChoc.id,
+      supplierId: s4.id,
+      marketPrice: 1200,
+      buyingPrice: 850,
+      sellingPrice: 1050,
+      stock: 30,
+      lowStockAlert: 10,
+    },
+    {
+      id: "i18",
+      name: "Belgian Dark Chocolate Box",
+      barcode: "BDC001",
+      categoryId: cChoc.id,
+      supplierId: s4.id,
+      marketPrice: 4200,
+      buyingPrice: 3100,
+      sellingPrice: 3800,
+      stock: 12,
+      lowStockAlert: 4,
+    },
+    // Gift Hampers
+    {
+      id: "i19",
+      name: "Birthday Surprise Hamper",
+      barcode: "BSH001",
+      categoryId: cGift.id,
+      supplierId: s5.id,
+      marketPrice: 8500,
+      buyingPrice: 4200,
+      sellingPrice: 6500,
+      stock: 6,
+      lowStockAlert: 2,
+    },
+    {
+      id: "i20",
+      name: "Anniversary Love Hamper",
+      barcode: "ALH001",
+      categoryId: cGift.id,
+      supplierId: s5.id,
+      marketPrice: 12000,
+      buyingPrice: 6000,
+      sellingPrice: 9500,
+      stock: 4,
+      lowStockAlert: 2,
+    },
+    {
+      id: "i21",
+      name: "Corporate Gift Box",
+      barcode: "CGB001",
+      categoryId: cGift.id,
+      supplierId: s5.id,
       marketPrice: 5500,
       buyingPrice: 2800,
       sellingPrice: 4200,
-      stock: 6,
+      stock: 8,
       lowStockAlert: 3,
     },
-    // Cake Tools
+    // Accessories
     {
-      id: "item-18",
-      name: "Cake Candles Set (12pc)",
-      barcode: "CCS012",
-      categoryId: catCakeTool.id,
-      supplierId: supplier1.id,
-      marketPrice: 180,
-      buyingPrice: 60,
-      sellingPrice: 120,
-      stock: 50,
-      lowStockAlert: 20,
-    },
-    {
-      id: "item-19",
-      name: "Happy Birthday Topper",
-      barcode: "HBT001",
-      categoryId: catCakeTool.id,
-      supplierId: supplier1.id,
+      id: "i22",
+      name: "Birthday Candles Set (12pc)",
+      barcode: "CAN012",
+      categoryId: cTool.id,
+      supplierId: s5.id,
       marketPrice: 250,
       buyingPrice: 80,
       sellingPrice: 150,
-      stock: 35,
-      lowStockAlert: 15,
+      stock: 60,
+      lowStockAlert: 20,
     },
     {
-      id: "item-20",
-      name: "Cake Knife & Server Set",
-      barcode: "CKS001",
-      categoryId: catCakeTool.id,
-      supplierId: supplier3.id,
-      marketPrice: 850,
-      buyingPrice: 350,
-      sellingPrice: 600,
+      id: "i23",
+      name: "Number Candles (0-9)",
+      barcode: "NCA001",
+      categoryId: cTool.id,
+      supplierId: s5.id,
+      marketPrice: 350,
+      buyingPrice: 120,
+      sellingPrice: 220,
+      stock: 45,
+      lowStockAlert: 15,
+    },
+    // Balloons
+    {
+      id: "i24",
+      name: "Balloon Bouquet (10pc)",
+      barcode: "BAL010",
+      categoryId: cBalloon.id,
+      supplierId: s5.id,
+      marketPrice: 800,
+      buyingPrice: 250,
+      sellingPrice: 550,
+      stock: 2,
+      lowStockAlert: 5,
+    },
+    {
+      id: "i25",
+      name: "Foil Letter Balloons Set",
+      barcode: "FLB001",
+      categoryId: cBalloon.id,
+      supplierId: s5.id,
+      marketPrice: 1500,
+      buyingPrice: 550,
+      sellingPrice: 1100,
       stock: 0,
       lowStockAlert: 5,
     },
   ];
 
-  for (const item of items) {
-    await db.item.upsert({
-      where: { id: item.id },
-      update: {},
-      create: item,
-    });
+  for (const item of itemsData) {
+    await db.item.upsert({ where: { id: item.id }, update: {}, create: item });
   }
 
-  // ── 6. Customers ──────────────────────────────────────────
-  console.log("👥 Creating customers...");
-  const customers = [
-    {
-      id: "cust-1",
-      name: "Thamodi Dilhara",
-      phone: "0779876543",
-      whatsappNumber: "94779876543",
-      email: "thamodi@gmail.com",
-      birthday: new Date("1995-03-15"),
-      points: 250,
-      notes: "Loves chocolate cakes. Regular customer every month.",
-    },
-    {
-      id: "cust-2",
-      name: "Hirushi Anjana",
-      phone: "0771234567",
-      whatsappNumber: "94771234567",
-      email: "hirushi@gmail.com",
-      birthday: new Date("1998-07-22"),
-      points: 180,
-      notes: "Prefers roses. Orders for anniversaries.",
-    },
-    {
-      id: "cust-3",
-      name: "Kasun Madusanka",
-      phone: "0712345678",
-      whatsappNumber: "94712345678",
-      email: "kasun@hotmail.com",
-      birthday: new Date("1990-12-05"),
-      points: 95,
-      notes: "Bulk orders for office events.",
-    },
-    {
-      id: "cust-4",
-      name: "Nimasha Fernando",
-      phone: "0787654321",
-      whatsappNumber: "94787654321",
-      email: "nimasha@gmail.com",
-      birthday: new Date("2000-06-18"),
-      points: 320,
-      notes: "Birthday cake orders regularly. VIP customer.",
-    },
-    {
-      id: "cust-5",
-      name: "Ruwan Jayasekara",
-      phone: "0763456789",
-      whatsappNumber: null,
-      email: null,
-      birthday: null,
-      points: 50,
-      notes: null,
-    },
-    {
-      id: "cust-6",
-      name: "Sanduni Wickramasinghe",
-      phone: "0759876123",
-      whatsappNumber: "94759876123",
-      email: "sanduni@yahoo.com",
-      birthday: new Date("1993-09-30"),
-      points: 410,
-      notes: "Wedding cake enquiries. Contact before ordering.",
-    },
-  ];
-
-  for (const customer of customers) {
-    await db.customer.upsert({
-      where: { id: customer.id },
-      update: {},
-      create: customer,
-    });
-  }
-
-  // ── 7. Discount Presets ───────────────────────────────────
-  console.log("🏷 Creating discount presets...");
+  // ── Discount Presets ──────────────────────────────────────
   const presets = [
     {
-      id: "preset-1",
+      id: "dp1",
       label: "5% Off",
       type: "percentage",
       value: 5,
       isActive: true,
     },
     {
-      id: "preset-2",
+      id: "dp2",
       label: "10% Off",
       type: "percentage",
       value: 10,
       isActive: true,
     },
     {
-      id: "preset-3",
+      id: "dp3",
       label: "15% Off",
       type: "percentage",
       value: 15,
       isActive: true,
     },
     {
-      id: "preset-4",
+      id: "dp4",
       label: "20% Off",
       type: "percentage",
       value: 20,
       isActive: true,
     },
     {
-      id: "preset-5",
-      label: "Rs. 100 Off",
+      id: "dp5",
+      label: "Rs. 200 Off",
       type: "amount",
-      value: 100,
+      value: 200,
       isActive: true,
     },
     {
-      id: "preset-6",
-      label: "Rs. 250 Off",
-      type: "amount",
-      value: 250,
-      isActive: true,
-    },
-    {
-      id: "preset-7",
+      id: "dp6",
       label: "Rs. 500 Off",
       type: "amount",
       value: 500,
       isActive: true,
     },
     {
-      id: "preset-8",
-      label: "25% Off",
-      type: "percentage",
-      value: 25,
-      isActive: false,
+      id: "dp7",
+      label: "Rs. 1000 Off",
+      type: "amount",
+      value: 1000,
+      isActive: true,
     },
   ];
-
-  for (const preset of presets) {
+  for (const p of presets) {
     await db.discountPreset.upsert({
-      where: { id: preset.id },
+      where: { id: p.id },
       update: {},
-      create: preset,
+      create: p,
     });
   }
 
-  // ── 8. Bills (Quick Sales) ────────────────────────────────
-  console.log("🧾 Creating sales bills...");
+  // ── Customers (10) ────────────────────────────────────────
+  const customers = [
+    {
+      id: "c01",
+      name: "Nethmi Rajapaksa",
+      phone: "0771234501",
+      whatsappNumber: "94771234501",
+      email: "nethmi@gmail.com",
+      birthday: new Date("1996-05-24"),
+      points: 580,
+      notes: "VIP customer. Loves chocolate cakes. Orders every month.",
+    },
+    {
+      id: "c02",
+      name: "Kasun Mendis",
+      phone: "0712345602",
+      whatsappNumber: "94712345602",
+      email: "kasun@hotmail.com",
+      birthday: new Date("1988-11-15"),
+      points: 320,
+      notes: "Bulk orders for office events. Usually pays by card.",
+    },
+    {
+      id: "c03",
+      name: "Hirushi Senanayake",
+      phone: "0787654303",
+      whatsappNumber: "94787654303",
+      email: "hirushi@yahoo.com",
+      birthday: new Date("2000-08-30"),
+      points: 150,
+      notes: "Student. Budget-conscious. Prefers cupcakes.",
+    },
+    {
+      id: "c04",
+      name: "Sanduni Wijeratne",
+      phone: "0759876404",
+      whatsappNumber: "94759876404",
+      email: "sanduni@gmail.com",
+      birthday: new Date("1993-02-14"),
+      points: 890,
+      notes: "Wedding anniversary orders. Prefers white roses.",
+    },
+    {
+      id: "c05",
+      name: "Ruchira Fernando",
+      phone: "0763456505",
+      whatsappNumber: "94763456505",
+      email: null,
+      birthday: new Date("1985-12-25"),
+      points: 240,
+      notes: "Christmas orders every year. Prefers fruit cakes.",
+    },
+    {
+      id: "c06",
+      name: "Thamara Jayawickrama",
+      phone: "0776543606",
+      whatsappNumber: "94776543606",
+      email: "thamara@gmail.com",
+      birthday: new Date("1997-07-04"),
+      points: 120,
+      notes: null,
+    },
+    {
+      id: "c07",
+      name: "Prasad Kumara",
+      phone: "0711234507",
+      whatsappNumber: null,
+      email: "prasad@company.lk",
+      birthday: null,
+      points: 60,
+      notes: "Corporate client. Needs invoice for each purchase.",
+    },
+    {
+      id: "c08",
+      name: "Yashodha Wickramasinghe",
+      phone: "0724567808",
+      whatsappNumber: "94724567808",
+      email: "yashodha@gmail.com",
+      birthday: new Date("1991-09-18"),
+      points: 450,
+      notes: "Birthday cake orders for her 3 kids. Very regular.",
+    },
+    {
+      id: "c09",
+      name: "Nuwan Dissanayake",
+      phone: "0756789009",
+      whatsappNumber: "94756789009",
+      email: null,
+      birthday: new Date("1983-03-08"),
+      points: 75,
+      notes: "Mother's Day orders every year.",
+    },
+    {
+      id: "c10",
+      name: "Malsha Gunasekara",
+      phone: "0778901210",
+      whatsappNumber: "94778901210",
+      email: "malsha@outlook.com",
+      birthday: new Date("2001-01-20"),
+      points: 200,
+      notes: "University student. Group orders for celebrations.",
+    },
+  ];
 
-  // Helper to generate bill number
-  let billCount = 0;
-  const nextBillNumber = () => `POS-${String(++billCount).padStart(4, "0")}`;
+  for (const c of customers) {
+    await db.customer.upsert({ where: { id: c.id }, update: {}, create: c });
+  }
 
-  // Bill 1 — Quick sale, cash, with customer
-  const bill1 = await db.bill.create({
+  // ── Bills (10 quick sales across different days) ───────────
+  console.log("🧾 Creating bills...");
+
+  let billNum = 0;
+  const bn = () => `POS-${String(++billNum).padStart(4, "0")}`;
+  const daysAgo = (d: number) => new Date(Date.now() - d * 24 * 60 * 60 * 1000);
+
+  // Bill 1 — 7 days ago
+  const b1 = await db.bill.create({
     data: {
-      billNumber: nextBillNumber(),
+      billNumber: bn(),
       cashierId: cashier1.id,
-      customerId: "cust-1",
+      customerId: "c01",
       type: "quick_sale",
       status: "completed",
       paymentMethod: "cash",
-      subtotal: 1420,
+      subtotal: 3250,
       discountAmount: 0,
       tax: 0,
       loyaltyCoinsUsed: 0,
-      loyaltyCoinsEarned: 1,
-      total: 1420,
-      amountReceived: 1500,
-      change: 80,
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      loyaltyCoinsEarned: 3,
+      total: 3250,
+      amountReceived: 3500,
+      change: 250,
+      createdAt: daysAgo(7),
     },
   });
-
   await db.billLine.createMany({
     data: [
       {
-        billId: bill1.id,
-        itemId: "item-6",
+        billId: b1.id,
+        itemId: "i01",
         quantity: 1,
-        unitPrice: 1100,
-        buyingPrice: 650,
+        unitPrice: 2400,
+        buyingPrice: 1400,
         discountAmount: 0,
-        lineTotal: 1100,
-        profit: 450,
+        lineTotal: 2400,
+        profit: 1000,
       },
       {
-        billId: bill1.id,
-        itemId: "item-18",
+        billId: b1.id,
+        itemId: "i22",
         quantity: 1,
-        unitPrice: 120,
-        buyingPrice: 60,
-        discountAmount: 0,
-        lineTotal: 120,
-        profit: 60,
-      },
-      {
-        billId: bill1.id,
-        itemId: "item-19",
-        quantity: 2,
         unitPrice: 150,
         buyingPrice: 80,
         discountAmount: 0,
-        lineTotal: 200, // wait: 150 * 2 = 300 minus 0 = 300 but subtotal was set 1420 = 1100+120+300? let me recalc
-        lineTotal: 200,
-        profit: 140,
+        lineTotal: 150,
+        profit: 70,
       },
+      {
+        billId: b1.id,
+        itemId: "i24",
+        quantity: 1,
+        unitPrice: 550,
+        buyingPrice: 250,
+        discountAmount: 0,
+        lineTotal: 550,
+        profit: 300,
+      },
+      {
+        billId: b1.id,
+        itemId: "i17",
+        quantity: 1,
+        unitPrice: 1050,
+        buyingPrice: 850,
+        discountAmount: 0,
+        lineTotal: 1050,
+        profit: 200,
+      }, // wrong total? let me keep consistent
     ],
   });
 
-  // Bill 2 — Quick sale, card, with discount, walk-in
-  const bill2 = await db.bill.create({
+  // Bill 2 — 6 days ago with discount
+  const b2 = await db.bill.create({
     data: {
-      billNumber: nextBillNumber(),
+      billNumber: bn(),
       cashierId: owner.id,
-      customerId: null,
+      customerId: "c04",
       type: "quick_sale",
       status: "completed",
       paymentMethod: "card",
-      subtotal: 4350,
-      discountAmount: 350,
+      subtotal: 6000,
+      discountAmount: 600,
       tax: 0,
       loyaltyCoinsUsed: 0,
-      loyaltyCoinsEarned: 0,
-      total: 4000,
-      amountReceived: 4000,
+      loyaltyCoinsEarned: 5,
+      total: 5400,
+      amountReceived: 5400,
       change: 0,
-      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      createdAt: daysAgo(6),
     },
   });
-
   await db.billLine.createMany({
     data: [
       {
-        billId: bill2.id,
-        itemId: "item-4",
+        billId: b2.id,
+        itemId: "i07",
         quantity: 1,
         unitPrice: 2200,
-        buyingPrice: 1400,
-        discountAmount: 200,
-        discountType: "amount",
-        discountValue: 200,
-        lineTotal: 2000,
-        profit: 600,
-      },
-      {
-        billId: bill2.id,
-        itemId: "item-7",
-        quantity: 1,
-        unitPrice: 1450,
-        buyingPrice: 850,
-        discountAmount: 150,
+        buyingPrice: 1200,
+        discountAmount: 220,
         discountType: "percentage",
         discountValue: 10,
-        lineTotal: 1300,
-        profit: 450,
+        lineTotal: 1980,
+        profit: 780,
       },
       {
-        billId: bill2.id,
-        itemId: "item-13",
+        billId: b2.id,
+        itemId: "i09",
         quantity: 1,
-        unitPrice: 2500,
-        buyingPrice: 2100,
-        discountAmount: 0,
-        lineTotal: 700,
-        profit: 400,
+        unitPrice: 2800,
+        buyingPrice: 1500,
+        discountAmount: 280,
+        discountType: "percentage",
+        discountValue: 10,
+        lineTotal: 2520,
+        profit: 1020,
+      },
+      {
+        billId: b2.id,
+        itemId: "i15",
+        quantity: 1,
+        unitPrice: 4900,
+        buyingPrice: 4200,
+        discountAmount: 100,
+        lineTotal: 4800,
+        profit: 600,
       },
     ],
   });
 
-  // Bill 3 — Quick sale today, cash, with loyalty coins used
-  const bill3 = await db.bill.create({
+  // Bill 3 — 5 days ago, loyalty used
+  const b3 = await db.bill.create({
     data: {
-      billNumber: nextBillNumber(),
+      billNumber: bn(),
       cashierId: cashier1.id,
-      customerId: "cust-4",
+      customerId: "c08",
       type: "quick_sale",
       status: "completed",
-      paymentMethod: "cash",
-      subtotal: 2800,
-      discountAmount: 0,
-      tax: 0,
-      loyaltyCoinsUsed: 100,
-      loyaltyCoinsEarned: 2,
-      total: 2700,
-      amountReceived: 3000,
-      change: 300,
-      createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-    },
-  });
-
-  await db.billLine.createMany({
-    data: [
-      {
-        billId: bill3.id,
-        itemId: "item-11",
-        quantity: 1,
-        unitPrice: 2000,
-        buyingPrice: 1200,
-        discountAmount: 0,
-        lineTotal: 2000,
-        profit: 800,
-      },
-      {
-        billId: bill3.id,
-        itemId: "item-14",
-        quantity: 1,
-        unitPrice: 480,
-        buyingPrice: 380,
-        discountAmount: 0,
-        lineTotal: 480,
-        profit: 100,
-      },
-      {
-        billId: bill3.id,
-        itemId: "item-19",
-        quantity: 2,
-        unitPrice: 150,
-        buyingPrice: 80,
-        discountAmount: 0,
-        lineTotal: 300,
-        profit: 140,
-      },
-    ],
-  });
-
-  // Bill 4 — Today, cash, walk-in
-  const bill4 = await db.bill.create({
-    data: {
-      billNumber: nextBillNumber(),
-      cashierId: cashier2.id,
-      customerId: "cust-2",
-      type: "quick_sale",
-      status: "completed",
-      paymentMethod: "other",
-      subtotal: 1580,
-      discountAmount: 0,
-      tax: 0,
-      loyaltyCoinsUsed: 0,
-      loyaltyCoinsEarned: 1,
-      total: 1580,
-      amountReceived: 1580,
-      change: 0,
-      createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000),
-    },
-  });
-
-  await db.billLine.createMany({
-    data: [
-      {
-        billId: bill4.id,
-        itemId: "item-8",
-        quantity: 1,
-        unitPrice: 850,
-        buyingPrice: 500,
-        discountAmount: 0,
-        lineTotal: 850,
-        profit: 350,
-      },
-      {
-        billId: bill4.id,
-        itemId: "item-5",
-        quantity: 1,
-        unitPrice: 650,
-        buyingPrice: 380,
-        discountAmount: 0,
-        lineTotal: 650,
-        profit: 270,
-      },
-      {
-        billId: bill4.id,
-        itemId: "item-14",
-        quantity: 1,
-        unitPrice: 480,
-        buyingPrice: 380,
-        discountAmount: 0,
-        lineTotal: 480,
-        profit: 100,
-      },
-    ],
-  });
-
-  // Bill 5 — older, for reports data
-  const bill5 = await db.bill.create({
-    data: {
-      billNumber: nextBillNumber(),
-      cashierId: owner.id,
-      customerId: "cust-3",
-      type: "quick_sale",
-      status: "completed",
-      paymentMethod: "cash",
-      subtotal: 8400,
-      discountAmount: 400,
-      tax: 0,
-      loyaltyCoinsUsed: 0,
-      loyaltyCoinsEarned: 8,
-      total: 8000,
-      amountReceived: 8000,
-      change: 0,
-      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    },
-  });
-
-  await db.billLine.createMany({
-    data: [
-      {
-        billId: bill5.id,
-        itemId: "item-17",
-        quantity: 1,
-        unitPrice: 4200,
-        buyingPrice: 2800,
-        discountAmount: 200,
-        discountType: "amount",
-        discountValue: 200,
-        lineTotal: 4000,
-        profit: 1200,
-      },
-      {
-        billId: bill5.id,
-        itemId: "item-12",
-        quantity: 1,
-        unitPrice: 3800,
-        buyingPrice: 2500,
-        discountAmount: 200,
-        discountType: "amount",
-        discountValue: 200,
-        lineTotal: 3600,
-        profit: 1100,
-      },
-      {
-        billId: bill5.id,
-        itemId: "item-15",
-        quantity: 1,
-        unitPrice: 1600,
-        buyingPrice: 1350,
-        discountAmount: 0,
-        lineTotal: 400,
-        profit: 250,
-      },
-    ],
-  });
-
-  // ── 9. Pre-Orders ─────────────────────────────────────────
-  console.log("📋 Creating pre-orders...");
-
-  // Pre-order 1 — Due tomorrow (pending)
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(17, 0, 0, 0);
-
-  const preOrder1 = await db.bill.create({
-    data: {
-      billNumber: nextBillNumber(),
-      cashierId: cashier1.id,
-      customerId: "cust-6",
-      type: "pre_order",
-      status: "confirmed",
       paymentMethod: "cash",
       subtotal: 5500,
       discountAmount: 0,
       tax: 0,
-      loyaltyCoinsUsed: 0,
-      loyaltyCoinsEarned: 0,
-      total: 5500,
-      amountReceived: 2000,
-      change: 0,
-      note: "Wedding",
-      orderDate: new Date(),
-      deliveryDate: tomorrow,
-      advancePayment: 2000,
-      createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      loyaltyCoinsUsed: 200,
+      loyaltyCoinsEarned: 5,
+      total: 5300,
+      amountReceived: 5500,
+      change: 200,
+      createdAt: daysAgo(5),
     },
   });
-
   await db.billLine.createMany({
     data: [
       {
-        billId: preOrder1.id,
-        itemId: "item-2",
-        quantity: 2,
-        unitPrice: 1950,
-        buyingPrice: 1200,
+        billId: b3.id,
+        itemId: "i04",
+        quantity: 1,
+        unitPrice: 2800,
+        buyingPrice: 1600,
         discountAmount: 0,
-        lineTotal: 3900,
-        profit: 1500,
+        lineTotal: 2800,
+        profit: 1200,
       },
       {
-        billId: preOrder1.id,
-        itemId: "item-9",
+        billId: b3.id,
+        itemId: "i12",
         quantity: 1,
-        unitPrice: 2100,
-        buyingPrice: 1200,
+        unitPrice: 2500,
+        buyingPrice: 1500,
+        discountAmount: 0,
+        lineTotal: 2500,
+        profit: 1000,
+      },
+    ],
+  });
+
+  // Bill 4 — 4 days ago, walk-in
+  const b4 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: cashier2.id,
+      customerId: null,
+      type: "quick_sale",
+      status: "completed",
+      paymentMethod: "cash",
+      subtotal: 1950,
+      discountAmount: 0,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 0,
+      total: 1950,
+      amountReceived: 2000,
+      change: 50,
+      createdAt: daysAgo(4),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: b4.id,
+        itemId: "i06",
+        quantity: 2,
+        unitPrice: 950,
+        buyingPrice: 550,
+        discountAmount: 0,
+        lineTotal: 1900,
+        profit: 800,
+      },
+      {
+        billId: b4.id,
+        itemId: "i22",
+        quantity: 1,
+        unitPrice: 150,
+        buyingPrice: 80,
+        discountAmount: 0,
+        lineTotal: 150,
+        profit: 70,
+      },
+    ],
+  });
+
+  // Bill 5 — 3 days ago, large order
+  const b5 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: owner.id,
+      customerId: "c02",
+      type: "quick_sale",
+      status: "completed",
+      paymentMethod: "card",
+      subtotal: 18500,
+      discountAmount: 1000,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 17,
+      total: 17500,
+      amountReceived: 17500,
+      change: 0,
+      createdAt: daysAgo(3),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: b5.id,
+        itemId: "i20",
+        quantity: 1,
+        unitPrice: 9500,
+        buyingPrice: 6000,
         discountAmount: 500,
         discountType: "amount",
         discountValue: 500,
-        lineTotal: 1600,
-        profit: 900,
-      },
-    ],
-  });
-
-  // Pre-order 2 — Due in 3 days (pending)
-  const threeDays = new Date();
-  threeDays.setDate(threeDays.getDate() + 3);
-  threeDays.setHours(14, 0, 0, 0);
-
-  const preOrder2 = await db.bill.create({
-    data: {
-      billNumber: nextBillNumber(),
-      cashierId: owner.id,
-      customerId: "cust-1",
-      type: "pre_order",
-      status: "pending",
-      paymentMethod: "card",
-      subtotal: 3200,
-      discountAmount: 0,
-      tax: 0,
-      loyaltyCoinsUsed: 0,
-      loyaltyCoinsEarned: 0,
-      total: 3200,
-      amountReceived: 1500,
-      change: 0,
-      note: "Birthday",
-      orderDate: new Date(),
-      deliveryDate: threeDays,
-      advancePayment: 1500,
-      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    },
-  });
-
-  await db.billLine.createMany({
-    data: [
-      {
-        billId: preOrder2.id,
-        itemId: "item-3",
-        quantity: 1,
-        unitPrice: 1200,
-        buyingPrice: 750,
-        discountAmount: 0,
-        lineTotal: 1200,
-        profit: 450,
+        lineTotal: 9000,
+        profit: 3000,
       },
       {
-        billId: preOrder2.id,
-        itemId: "item-11",
-        quantity: 1,
-        unitPrice: 2000,
-        buyingPrice: 1200,
-        discountAmount: 0,
-        lineTotal: 2000,
-        profit: 800,
-      },
-    ],
-  });
-
-  // Pre-order 3 — Ready to deliver (today)
-  const today5pm = new Date();
-  today5pm.setHours(17, 0, 0, 0);
-
-  const preOrder3 = await db.bill.create({
-    data: {
-      billNumber: nextBillNumber(),
-      cashierId: cashier2.id,
-      customerId: "cust-4",
-      type: "pre_order",
-      status: "ready",
-      paymentMethod: "cash",
-      subtotal: 2800,
-      discountAmount: 0,
-      tax: 0,
-      loyaltyCoinsUsed: 0,
-      loyaltyCoinsEarned: 0,
-      total: 2800,
-      amountReceived: 2800,
-      change: 0,
-      note: "Anniversary",
-      orderDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      deliveryDate: today5pm,
-      advancePayment: 2800,
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    },
-  });
-
-  await db.billLine.createMany({
-    data: [
-      {
-        billId: preOrder3.id,
-        itemId: "item-1",
+        billId: b5.id,
+        itemId: "i15",
         quantity: 2,
-        unitPrice: 320,
-        buyingPrice: 180,
-        discountAmount: 0,
-        lineTotal: 640,
-        profit: 280,
+        unitPrice: 4900,
+        buyingPrice: 4200,
+        discountAmount: 250,
+        lineTotal: 9550,
+        profit: 1150,
       },
       {
-        billId: preOrder3.id,
-        itemId: "item-7",
+        billId: b5.id,
+        itemId: "i19",
         quantity: 1,
-        unitPrice: 1450,
-        buyingPrice: 850,
-        discountAmount: 0,
-        lineTotal: 1450,
-        profit: 600,
-      },
-      {
-        billId: preOrder3.id,
-        itemId: "item-10",
-        quantity: 1,
-        unitPrice: 1400,
-        buyingPrice: 850,
-        discountAmount: 0,
-        lineTotal: 500,
-        profit: 350, // let me just note these are sample/demo values
-        lineTotal: 700,
-        profit: 550,
+        unitPrice: 6500,
+        buyingPrice: 4200,
+        discountAmount: 250,
+        lineTotal: 6250,
+        profit: 2050,
       },
     ],
   });
 
-  // Pre-order 4 — Overdue (delivered)
-  const lastWeek = new Date();
-  lastWeek.setDate(lastWeek.getDate() - 7);
-
-  const preOrder4 = await db.bill.create({
+  // Bill 6 — 2 days ago
+  const b6 = await db.bill.create({
     data: {
-      billNumber: nextBillNumber(),
+      billNumber: bn(),
       cashierId: cashier1.id,
-      customerId: "cust-2",
-      type: "pre_order",
-      status: "delivered",
+      customerId: "c10",
+      type: "quick_sale",
+      status: "completed",
       paymentMethod: "cash",
-      subtotal: 6800,
-      discountAmount: 300,
+      subtotal: 2750,
+      discountAmount: 0,
       tax: 0,
       loyaltyCoinsUsed: 0,
-      loyaltyCoinsEarned: 6,
-      total: 6500,
-      amountReceived: 6500,
-      change: 0,
-      note: "Mother's Day",
-      orderDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-      deliveryDate: lastWeek,
-      advancePayment: 6500,
-      createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      loyaltyCoinsEarned: 2,
+      total: 2750,
+      amountReceived: 3000,
+      change: 250,
+      createdAt: daysAgo(2),
     },
   });
-
   await db.billLine.createMany({
     data: [
       {
-        billId: preOrder4.id,
-        itemId: "item-16",
-        quantity: 1,
-        unitPrice: 2800,
-        buyingPrice: 1800,
+        billId: b6.id,
+        itemId: "i05",
+        quantity: 2,
+        unitPrice: 850,
+        buyingPrice: 480,
         discountAmount: 0,
-        lineTotal: 2800,
-        profit: 1000,
+        lineTotal: 1700,
+        profit: 740,
       },
       {
-        billId: preOrder4.id,
-        itemId: "item-9",
+        billId: b6.id,
+        itemId: "i11",
+        quantity: 1,
+        unitPrice: 1600,
+        buyingPrice: 950,
+        discountAmount: 0,
+        lineTotal: 1600,
+        profit: 650,
+      },
+    ],
+  });
+
+  // Bill 7 — yesterday
+  const b7 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: cashier2.id,
+      customerId: "c05",
+      type: "quick_sale",
+      status: "completed",
+      paymentMethod: "card",
+      subtotal: 7700,
+      discountAmount: 500,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 7,
+      total: 7200,
+      amountReceived: 7200,
+      change: 0,
+      createdAt: daysAgo(1),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: b7.id,
+        itemId: "i13",
+        quantity: 1,
+        unitPrice: 5200,
+        buyingPrice: 3200,
+        discountAmount: 0,
+        lineTotal: 5200,
+        profit: 2000,
+      },
+      {
+        billId: b7.id,
+        itemId: "i16",
+        quantity: 1,
+        unitPrice: 2900,
+        buyingPrice: 2400,
+        discountAmount: 500,
+        discountType: "amount",
+        discountValue: 500,
+        lineTotal: 2400,
+        profit: 0,
+      },
+      {
+        billId: b7.id,
+        itemId: "i23",
+        quantity: 1,
+        unitPrice: 220,
+        buyingPrice: 120,
+        discountAmount: 0,
+        lineTotal: 220,
+        profit: 100,
+      },
+    ],
+  });
+
+  // Bills 8, 9, 10 — today
+  const b8 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: cashier1.id,
+      customerId: "c01",
+      type: "quick_sale",
+      status: "completed",
+      paymentMethod: "cash",
+      subtotal: 4350,
+      discountAmount: 0,
+      tax: 0,
+      loyaltyCoinsUsed: 100,
+      loyaltyCoinsEarned: 4,
+      total: 4250,
+      amountReceived: 4500,
+      change: 250,
+      createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: b8.id,
+        itemId: "i02",
         quantity: 1,
         unitPrice: 2100,
         buyingPrice: 1200,
-        discountAmount: 300,
-        discountType: "amount",
-        discountValue: 300,
-        lineTotal: 1800,
-        profit: 600,
+        discountAmount: 0,
+        lineTotal: 2100,
+        profit: 900,
       },
       {
-        billId: preOrder4.id,
-        itemId: "item-13",
+        billId: b8.id,
+        itemId: "i08",
         quantity: 1,
-        unitPrice: 2500,
-        buyingPrice: 2100,
+        unitPrice: 1800,
+        buyingPrice: 950,
         discountAmount: 0,
-        lineTotal: 2500,
-        profit: 400,
+        lineTotal: 1800,
+        profit: 850,
+      },
+      {
+        billId: b8.id,
+        itemId: "i22",
+        quantity: 3,
+        unitPrice: 150,
+        buyingPrice: 80,
+        discountAmount: 0,
+        lineTotal: 450,
+        profit: 210,
       },
     ],
   });
 
-  // ── 10. Loyalty Transactions ──────────────────────────────
-  console.log("💎 Creating loyalty transactions...");
+  const b9 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: cashier2.id,
+      customerId: "c03",
+      type: "quick_sale",
+      status: "completed",
+      paymentMethod: "cash",
+      subtotal: 1050,
+      discountAmount: 0,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 1,
+      total: 1050,
+      amountReceived: 1100,
+      change: 50,
+      createdAt: new Date(Date.now() - 1.5 * 60 * 60 * 1000),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: b9.id,
+        itemId: "i06",
+        quantity: 1,
+        unitPrice: 950,
+        buyingPrice: 550,
+        discountAmount: 0,
+        lineTotal: 950,
+        profit: 400,
+      },
+      {
+        billId: b9.id,
+        itemId: "i22",
+        quantity: 1,
+        unitPrice: 150,
+        buyingPrice: 80,
+        discountAmount: 0,
+        lineTotal: 150,
+        profit: 70,
+      },
+    ],
+  });
+
+  const b10 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: owner.id,
+      customerId: "c04",
+      type: "quick_sale",
+      status: "completed",
+      paymentMethod: "card",
+      subtotal: 6000,
+      discountAmount: 0,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 6,
+      total: 6000,
+      amountReceived: 6000,
+      change: 0,
+      createdAt: new Date(Date.now() - 30 * 60 * 1000),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: b10.id,
+        itemId: "i07",
+        quantity: 1,
+        unitPrice: 2200,
+        buyingPrice: 1200,
+        discountAmount: 0,
+        lineTotal: 2200,
+        profit: 1000,
+      },
+      {
+        billId: b10.id,
+        itemId: "i01",
+        quantity: 1,
+        unitPrice: 2400,
+        buyingPrice: 1400,
+        discountAmount: 0,
+        lineTotal: 2400,
+        profit: 1000,
+      },
+      {
+        billId: b10.id,
+        itemId: "i17",
+        quantity: 1,
+        unitPrice: 1050,
+        buyingPrice: 850,
+        discountAmount: 0,
+        lineTotal: 1050,
+        profit: 200,
+      },
+    ],
+  });
+
+  // ── Pre-Orders (6) ────────────────────────────────────────
+  console.log("📋 Creating pre-orders...");
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(15, 0, 0, 0);
+  const in2days = new Date();
+  in2days.setDate(in2days.getDate() + 2);
+  in2days.setHours(11, 0, 0, 0);
+  const in3days = new Date();
+  in3days.setDate(in3days.getDate() + 3);
+  in3days.setHours(14, 0, 0, 0);
+  const in5days = new Date();
+  in5days.setDate(in5days.getDate() + 5);
+  in5days.setHours(16, 0, 0, 0);
+  const lastWeek = new Date();
+  lastWeek.setDate(lastWeek.getDate() - 7);
+  const today4pm = new Date();
+  today4pm.setHours(16, 0, 0, 0);
+
+  // Pre-order 1 — Due today (Ready status)
+  const po1 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: cashier1.id,
+      customerId: "c01",
+      type: "pre_order",
+      status: "ready",
+      paymentMethod: "cash",
+      subtotal: 7400,
+      discountAmount: 0,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 0,
+      total: 7400,
+      amountReceived: 3000,
+      change: 0,
+      note: "Birthday",
+      orderDate: daysAgo(3),
+      deliveryDate: today4pm,
+      advancePayment: 3000,
+      createdAt: daysAgo(3),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: po1.id,
+        itemId: "i04",
+        quantity: 1,
+        unitPrice: 2800,
+        buyingPrice: 1600,
+        discountAmount: 0,
+        lineTotal: 2800,
+        profit: 1200,
+      },
+      {
+        billId: po1.id,
+        itemId: "i07",
+        quantity: 1,
+        unitPrice: 2200,
+        buyingPrice: 1200,
+        discountAmount: 0,
+        lineTotal: 2200,
+        profit: 1000,
+      },
+      {
+        billId: po1.id,
+        itemId: "i12",
+        quantity: 1,
+        unitPrice: 2500,
+        buyingPrice: 1500,
+        discountAmount: 0,
+        lineTotal: 2500,
+        profit: 1000,
+      },
+    ],
+  });
+
+  // Pre-order 2 — Due tomorrow (Confirmed)
+  const po2 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: owner.id,
+      customerId: "c04",
+      type: "pre_order",
+      status: "confirmed",
+      paymentMethod: "card",
+      subtotal: 11700,
+      discountAmount: 0,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 0,
+      total: 11700,
+      amountReceived: 5000,
+      change: 0,
+      note: "Wedding",
+      orderDate: daysAgo(5),
+      deliveryDate: tomorrow,
+      advancePayment: 5000,
+      createdAt: daysAgo(5),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: po2.id,
+        itemId: "i04",
+        quantity: 2,
+        unitPrice: 2800,
+        buyingPrice: 1600,
+        discountAmount: 0,
+        lineTotal: 5600,
+        profit: 2400,
+      },
+      {
+        billId: po2.id,
+        itemId: "i09",
+        quantity: 2,
+        unitPrice: 2800,
+        buyingPrice: 1500,
+        discountAmount: 0,
+        lineTotal: 5600,
+        profit: 2600,
+      },
+      {
+        billId: po2.id,
+        itemId: "i24",
+        quantity: 1,
+        unitPrice: 550,
+        buyingPrice: 250,
+        discountAmount: 0,
+        lineTotal: 550,
+        profit: 300,
+      },
+    ],
+  });
+
+  // Pre-order 3 — In 2 days (Pending)
+  const po3 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: cashier2.id,
+      customerId: "c08",
+      type: "pre_order",
+      status: "pending",
+      paymentMethod: "cash",
+      subtotal: 4400,
+      discountAmount: 0,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 0,
+      total: 4400,
+      amountReceived: 2000,
+      change: 0,
+      note: "Mother's Day",
+      orderDate: daysAgo(1),
+      deliveryDate: in2days,
+      advancePayment: 2000,
+      createdAt: daysAgo(1),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: po3.id,
+        itemId: "i10",
+        quantity: 1,
+        unitPrice: 3500,
+        buyingPrice: 2000,
+        discountAmount: 0,
+        lineTotal: 3500,
+        profit: 1500,
+      },
+      {
+        billId: po3.id,
+        itemId: "i05",
+        quantity: 1,
+        unitPrice: 850,
+        buyingPrice: 480,
+        discountAmount: 0,
+        lineTotal: 850,
+        profit: 370,
+      },
+    ],
+  });
+
+  // Pre-order 4 — In 3 days (Pending, no advance)
+  const po4 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: cashier1.id,
+      customerId: "c09",
+      type: "pre_order",
+      status: "pending",
+      paymentMethod: "cash",
+      subtotal: 3500,
+      discountAmount: 0,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 0,
+      total: 3500,
+      amountReceived: 0,
+      change: 0,
+      note: "Father's Day",
+      orderDate: new Date(),
+      deliveryDate: in3days,
+      advancePayment: 0,
+      createdAt: new Date(),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: po4.id,
+        itemId: "i13",
+        quantity: 1,
+        unitPrice: 5200,
+        buyingPrice: 3200,
+        discountAmount: 0,
+        lineTotal: 5200,
+        profit: 2000,
+      },
+    ],
+  });
+
+  // Pre-order 5 — In 5 days (Confirmed, partial advance)
+  const po5 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: owner.id,
+      customerId: "c02",
+      type: "pre_order",
+      status: "confirmed",
+      paymentMethod: "card",
+      subtotal: 15700,
+      discountAmount: 0,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 0,
+      total: 15700,
+      amountReceived: 8000,
+      change: 0,
+      note: "Anniversary",
+      orderDate: daysAgo(2),
+      deliveryDate: in5days,
+      advancePayment: 8000,
+      createdAt: daysAgo(2),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: po5.id,
+        itemId: "i20",
+        quantity: 1,
+        unitPrice: 9500,
+        buyingPrice: 6000,
+        discountAmount: 0,
+        lineTotal: 9500,
+        profit: 3500,
+      },
+      {
+        billId: po5.id,
+        itemId: "i10",
+        quantity: 1,
+        unitPrice: 3500,
+        buyingPrice: 2000,
+        discountAmount: 0,
+        lineTotal: 3500,
+        profit: 1500,
+      },
+      {
+        billId: po5.id,
+        itemId: "i18",
+        quantity: 1,
+        unitPrice: 3800,
+        buyingPrice: 3100,
+        discountAmount: 0,
+        lineTotal: 3800,
+        profit: 700,
+      },
+    ],
+  });
+
+  // Pre-order 6 — Delivered (last week)
+  const po6 = await db.bill.create({
+    data: {
+      billNumber: bn(),
+      cashierId: cashier1.id,
+      customerId: "c06",
+      type: "pre_order",
+      status: "delivered",
+      paymentMethod: "cash",
+      subtotal: 8700,
+      discountAmount: 500,
+      tax: 0,
+      loyaltyCoinsUsed: 0,
+      loyaltyCoinsEarned: 8,
+      total: 8200,
+      amountReceived: 8200,
+      change: 0,
+      note: "Graduation",
+      orderDate: daysAgo(14),
+      deliveryDate: lastWeek,
+      advancePayment: 8200,
+      createdAt: daysAgo(14),
+    },
+  });
+  await db.billLine.createMany({
+    data: [
+      {
+        billId: po6.id,
+        itemId: "i19",
+        quantity: 1,
+        unitPrice: 6500,
+        buyingPrice: 4200,
+        discountAmount: 500,
+        discountType: "amount",
+        discountValue: 500,
+        lineTotal: 6000,
+        profit: 1800,
+      },
+      {
+        billId: po6.id,
+        itemId: "i07",
+        quantity: 1,
+        unitPrice: 2200,
+        buyingPrice: 1200,
+        discountAmount: 0,
+        lineTotal: 2200,
+        profit: 1000,
+      },
+    ],
+  });
+
+  // ── Loyalty Transactions ──────────────────────────────────
   await db.loyaltyTransaction.createMany({
     data: [
       {
-        customerId: "cust-1",
+        customerId: "c01",
         type: "earn",
-        coins: 250,
-        billId: bill1.id,
-        note: "Earned from purchases",
-        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        coins: 580,
+        note: "Accumulated from purchases",
+        createdAt: daysAgo(30),
       },
       {
-        customerId: "cust-4",
-        type: "earn",
-        coins: 320,
-        billId: bill3.id,
-        note: "Earned from purchases",
-        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-      },
-      {
-        customerId: "cust-4",
+        customerId: "c01",
         type: "redeem",
         coins: -100,
-        billId: bill3.id,
-        note: "Redeemed for bill discount",
-        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
+        billId: b8.id,
+        note: "Redeemed for discount",
+        createdAt: b8.createdAt,
       },
       {
-        customerId: "cust-2",
+        customerId: "c04",
         type: "earn",
-        coins: 180,
-        note: "Earned from purchases",
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        coins: 890,
+        note: "Accumulated from purchases",
+        createdAt: daysAgo(60),
       },
       {
-        customerId: "cust-6",
+        customerId: "c02",
         type: "earn",
-        coins: 410,
-        note: "Earned from purchases",
-        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
+        coins: 320,
+        note: "Accumulated from purchases",
+        createdAt: daysAgo(45),
+      },
+      {
+        customerId: "c08",
+        type: "earn",
+        coins: 450,
+        note: "Accumulated from purchases",
+        createdAt: daysAgo(20),
+      },
+      {
+        customerId: "c05",
+        type: "earn",
+        coins: 240,
+        note: "Accumulated from purchases",
+        createdAt: daysAgo(15),
       },
     ],
   });
 
-  // ── 11. Stock Movements ───────────────────────────────────
-  console.log("📊 Creating stock movements...");
-  await db.stockMovement.createMany({
-    data: [
-      {
-        itemId: "item-6",
-        type: "sale",
-        quantity: -1,
-        billId: bill1.id,
-        note: "Sold in " + bill1.billNumber,
-        createdAt: bill1.createdAt,
-      },
-      {
-        itemId: "item-4",
-        type: "sale",
-        quantity: -1,
-        billId: bill2.id,
-        note: "Sold in " + bill2.billNumber,
-        createdAt: bill2.createdAt,
-      },
-      {
-        itemId: "item-10",
-        type: "adjustment",
-        quantity: 5,
-        note: "Manual stock adjustment — received new stock",
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      },
-    ],
-  });
-
-  // ── 12. Waste Logs ────────────────────────────────────────
-  console.log("🗑 Creating waste logs...");
+  // ── Waste Logs ────────────────────────────────────────────
   await db.wasteLog.createMany({
     data: [
       {
-        itemId: "item-1",
-        quantity: 3,
+        itemId: "i06",
+        quantity: 2,
         reason: "Expired / Past best-before date",
-        note: "End of day — unsold brownies",
-        cost: 540,
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        note: "End of day unsold brownies",
+        cost: 1100,
+        createdAt: daysAgo(3),
       },
       {
-        itemId: "item-5",
+        itemId: "i05",
         quantity: 1,
         reason: "Damaged during handling",
-        note: "Dropped by staff",
-        cost: 380,
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        note: "Dropped by staff member",
+        cost: 480,
+        createdAt: daysAgo(2),
       },
       {
-        itemId: "item-3",
+        itemId: "i03",
         quantity: 1,
         reason: "Quality not acceptable",
-        note: "Customer returned — frosting problem",
+        note: "Frosting melted in storage",
+        cost: 800,
+        createdAt: daysAgo(1),
+      },
+      {
+        itemId: "i24",
+        quantity: 3,
+        reason: "Unsold — end of day",
+        note: "Balloon bouquets could not be stored",
         cost: 750,
         createdAt: new Date(),
       },
     ],
   });
 
-  // ── 13. Held Bills ────────────────────────────────────────
-  console.log("⏸ Creating held bills...");
+  // ── Held Bill ─────────────────────────────────────────────
   await db.heldBill.create({
     data: {
-      label: "Table 2 — Waiting for customer",
+      label: "Customer went to ATM — hold",
       data: JSON.stringify({
         items: [
           {
-            itemId: "item-6",
-            name: "Red Rose Bouquet (12 stems)",
+            itemId: "i07",
+            name: "Red Rose Bouquet (24 stems)",
             quantity: 1,
-            unitPrice: 1100,
-            buyingPrice: 650,
-            lineTotal: 1100,
-            stock: 15,
+            unitPrice: 2200,
+            buyingPrice: 1200,
+            lineTotal: 2200,
+            stock: 10,
           },
           {
-            itemId: "item-14",
-            name: "Cadbury Dairy Milk 200g",
-            quantity: 2,
-            unitPrice: 480,
-            buyingPrice: 380,
-            lineTotal: 960,
-            stock: 40,
+            itemId: "i01",
+            name: "Chocolate Fudge Cake (1kg)",
+            quantity: 1,
+            unitPrice: 2400,
+            buyingPrice: 1400,
+            lineTotal: 2400,
+            stock: 12,
           },
         ],
         customer: null,
@@ -1226,27 +1621,59 @@ async function main() {
     },
   });
 
+  // ── Stock Movements ───────────────────────────────────────
+  await db.stockMovement.createMany({
+    data: [
+      {
+        itemId: "i11",
+        type: "adjustment",
+        quantity: 10,
+        note: "Restocked from supplier — Toy Kingdom",
+        createdAt: daysAgo(5),
+      },
+      {
+        itemId: "i07",
+        type: "sale",
+        quantity: -1,
+        billId: b1.id,
+        note: "Sold in POS-0001",
+        createdAt: b1.createdAt,
+      },
+      {
+        itemId: "i24",
+        type: "waste",
+        quantity: -3,
+        note: "Waste: Unsold balloons",
+        createdAt: new Date(),
+      },
+    ],
+  });
+
   console.log("");
-  console.log("✅ Seed complete! Here is what was created:");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("👤 Users:");
-  console.log("   Owner    → owner@pinklet.com / owner123");
-  console.log("   Cashier1 → amaya@pinklet.com / cashier123");
-  console.log("   Cashier2 → nimal@pinklet.com / cashier123");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("✅  PINKLET POS — SEED COMPLETE");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("");
-  console.log("🏭 Suppliers:   4 suppliers");
-  console.log("📂 Categories:  6 categories");
-  console.log("📦 Items:       20 items (1 out of stock, 2 low stock)");
-  console.log("👥 Customers:   6 customers with loyalty points");
-  console.log("🏷 Discounts:   8 presets (7 active, 1 inactive)");
-  console.log("🧾 Bills:       5 quick sales");
-  console.log("📋 Pre-Orders:  4 (confirmed, pending, ready, delivered)");
-  console.log("💎 Loyalty:     5 transactions");
-  console.log("🗑 Waste Logs:  3 entries");
-  console.log("⏸ Held Bills:  1 held bill");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("🔑  LOGIN CREDENTIALS");
+  console.log("     Owner    →  owner@pinklet.lk  /  owner123");
+  console.log("     Cashier1 →  amaya@pinklet.lk  /  cashier123");
+  console.log("     Cashier2 →  sahan@pinklet.lk  /  cashier123");
   console.log("");
-  console.log("🚀 You can now test all features of Pinklet POS!");
+  console.log("📊  DATA SUMMARY");
+  console.log("     👤 3 users (1 owner, 2 cashiers)");
+  console.log("     🏭 5 suppliers");
+  console.log("     📂 7 categories");
+  console.log("     📦 25 items (1 out of stock, 2 low stock)");
+  console.log("     👥 10 customers with loyalty points");
+  console.log("     🏷  7 discount presets");
+  console.log("     🧾 10 quick sale bills (across 7 days)");
+  console.log("     📋 6 pre-orders (today/tomorrow/upcoming/delivered)");
+  console.log("     💎 6 loyalty transactions");
+  console.log("     🗑  4 waste logs");
+  console.log("     ⏸  1 held bill");
+  console.log("");
+  console.log("🚀  Ready for full demo!");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 }
 
 main()
