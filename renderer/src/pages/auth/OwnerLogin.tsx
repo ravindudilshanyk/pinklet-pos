@@ -26,7 +26,7 @@ export default function OwnerLogin() {
       const owner = accounts.find((a: any) => a.role === "owner");
       if (!owner) return setError("No owner account found");
       const result = await authService.login({
-        userId: owner.id,
+        email: owner.email,
         password: form.password,
       });
       setAuth(result.user, result.token);

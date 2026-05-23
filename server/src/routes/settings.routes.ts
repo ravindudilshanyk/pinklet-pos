@@ -2,8 +2,9 @@ import { Router } from "express";
 import { settingsController } from "../controllers/settings.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 import { ownerOnly } from "../middleware/role.middleware";
+import { backupController } from "../controllers/backup.controller";
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 router.use(authMiddleware);
 
 // Shop settings
@@ -34,5 +35,10 @@ router.delete(
   ownerOnly,
   settingsController.deleteDiscountPreset,
 );
+
+router.get("/backup/download", ownerOnly, backupController.downloadBackup);
+router.post("/backup/restore", ownerOnly, backupController.restoreBackup);
+router.get("/backup/list", ownerOnly, backupController.listBackups);
+router.post("/backup/auto", ownerOnly, backupController.createAutoBackup);
 
 export default router;

@@ -31,4 +31,19 @@ export const settingsService = {
 
   deleteDiscountPreset: (id: string) =>
     api.delete(`/settings/discounts/${id}`).then((r) => r.data.data),
+
+  downloadBackup: () => {
+    window.open(
+      "http://localhost:3001/api/v1/settings/backup/download",
+      "_blank",
+    );
+  },
+
+  createAutoBackup: () =>
+    api.post("/settings/backup/auto").then((r) => r.data.data),
+
+  listBackups: () => api.get("/settings/backup/list").then((r) => r.data.data),
+
+  restoreBackup: (filename: string) =>
+    api.post("/settings/backup/restore", { filename }).then((r) => r.data.data),
 };

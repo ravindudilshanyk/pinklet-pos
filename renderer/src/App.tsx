@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { authService } from "@/services/auth.service";
 import CreateOwner from "@/pages/auth/CreateOwner";
@@ -100,11 +100,13 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const Router = window.location.protocol === "file:" ? HashRouter : BrowserRouter
+
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <Router>
         <AppRoutes />
-      </BrowserRouter>
+      </Router>
     </QueryClientProvider>
   )
 }

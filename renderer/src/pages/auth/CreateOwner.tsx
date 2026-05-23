@@ -24,6 +24,7 @@ export default function CreateOwner() {
   const [error, setError] = useState('')
   const [resending, setResending] = useState(false)
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [localOtp, setLocalOtp] = useState('')
 
   const set = (key: keyof typeof form, value: string) =>
     setForm((f) => ({ ...f, [key]: value }))
@@ -63,10 +64,12 @@ export default function CreateOwner() {
 
     try {
       setLoading(true)
-      await api.post('/auth/setup/send-otp', {
+      const response = await api.post('/auth/setup/send-otp', {
         email: form.email.trim(),
         shopName: form.shopName.trim(),
       })
+      const otp = response.data?.data?.otp
+      if (otp) setLocalOtp(otp)
       setStep('otp')
       startResendCooldown()
     } catch (err: unknown) {
@@ -87,10 +90,12 @@ export default function CreateOwner() {
     setError('')
     try {
       setResending(true)
-      await api.post('/auth/setup/send-otp', {
+      const response = await api.post('/auth/setup/send-otp', {
         email: form.email.trim(),
         shopName: form.shopName.trim(),
       })
+      const otp = response.data?.data?.otp
+      if (otp) setLocalOtp(otp)
       startResendCooldown()
     } catch (err: unknown) {
       type ErrWithResponse = { response?: { data?: { error?: { message?: string } } } }
@@ -265,6 +270,12 @@ export default function CreateOwner() {
         {/* Step 2 — OTP verification */}
         {step === 'otp' && (
           <div>
+            {localOtp && (
+              <div style={{ backgroundColor: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.18)', borderRadius: '14px', padding: '14px 16px', marginBottom: '16px' }}>
+                <p style={{ margin: 0, fontSize: '12px', color: '#166534', fontWeight: 600 }}>Email delivery is unavailable here.</p>
+                <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#166534' }}>Use this OTP: <strong>{localOtp}</strong></p>
+              </div>
+            )}
             <div style={{ backgroundColor: 'rgba(238,45,124,0.05)', border: '1px solid rgba(238,45,124,0.15)', borderRadius: '14px', padding: '16px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span style={{ fontSize: '24px' }}>📧</span>
               <div>

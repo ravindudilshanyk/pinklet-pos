@@ -5,10 +5,15 @@
   "scripts": {
     "dev": "turbo run dev --parallel",
     "build": "turbo run build",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "dev:electron": "cd electron && pnpm dev",
+    "dev:all": "concurrently \"cd server && pnpm dev\" \"cd renderer && pnpm dev\" \"wait-on http://localhost:5173 && cd electron && pnpm dev\"",
+    "build:all": "cd server && pnpm build && cd ../renderer && pnpm build && cd ../electron && pnpm build"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "turbo": "^2.0.0",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "wait-on": "^9.0.10"
   }
 }

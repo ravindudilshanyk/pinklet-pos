@@ -1,5 +1,85 @@
 {
-  "name": "@pinklet/electron",
-  "version": "0.0.1",
-  "private": true
+  "name": "pinklet-pos",
+  "version": "1.0.0",
+  "description": "Pinklet POS System — Full-stack desktop POS for retail shops",
+  "main": "dist/main.js",
+  "author": "Pinklet POS",
+  "scripts": {
+    "build": "tsc",
+    "start": "electron dist/main.js",
+    "dev": "tsc && electron dist/main.js",
+    "package": "pnpm build && electron-builder --win --x64",
+    "package:dir": "pnpm build && electron-builder --win --dir"
+  },
+  "build": {
+    "appId": "com.pinklet.pos",
+    "productName": "Pinklet POS",
+    "copyright": "Copyright 2024 Pinklet POS",
+    "asar": true,
+    "directories": {
+      "output": "../../release"
+    },
+    "extraResources": [
+      {
+        "from": "../server",
+        "to": "server",
+        "filter": [
+          ".env",
+          "dist/**/*",
+          "prisma/schema.prisma",
+          "prisma/migrations/**/*"
+        ]
+      },
+      {
+        "from": "../server/node_modules",
+        "to": "server/node_modules",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../renderer/dist",
+        "to": "renderer/dist"
+      }
+    ],
+    "files": [
+      "dist/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Pinklet POS",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": null
+  },
+  "devDependencies": {
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1",
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "electron-is-dev": "^3.0.1"
+  }
 }

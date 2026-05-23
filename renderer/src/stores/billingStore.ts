@@ -37,12 +37,12 @@ interface BillingState {
   activeTab: "quick_sale" | "pre_order";
   focusItemId: string | null;
   preOrder: {
-    orderDate: "";
-    deliveryDate: "";
-    advancePayment: "";
-    advanceType: "";
-    designNotes: "";
-    note: "";
+    orderDate: string;
+    deliveryDate: string;
+    advancePayment: string;
+    advanceType: string;
+    designNotes: string;
+    note: string;
   };
 
   // Actions
@@ -87,12 +87,12 @@ export const useBillingStore = create<BillingState>((set, get) => ({
   activeTab: "quick_sale",
   focusItemId: null,
   preOrder: {
-    orderDate: "",
-    deliveryDate: "",
-    advancePayment: "",
-    advanceType: "",
-    designNotes: "",
-    note: "",
+    orderDate: "" as string,
+    deliveryDate: "" as string,
+    advancePayment: "" as string,
+    advanceType: "" as string,
+    designNotes: "" as string,
+    note: "" as string,
   },
 
   addItem: (newItem) => {

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authController } from "../controllers/auth.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Setup
 router.get("/setup-status", authController.getSetupStatus);

@@ -35,9 +35,9 @@ export const authService = {
     });
 
     // Send email
-    await emailService.sendOTP(email, otp, "reset");
+    const delivery = await emailService.sendOTP(email, otp, "reset");
 
-    return { message: "OTP sent" };
+    return { message: "OTP sent", ...delivery };
   },
 
   // Step 2 — Verify OTP
@@ -164,8 +164,8 @@ export const authService = {
       create: { email, otp, verified: false, expiresAt },
     });
 
-    await emailService.sendOTP(email, otp, "reset");
-    return { message: "OTP sent" };
+    const delivery = await emailService.sendOTP(email, otp, "reset");
+    return { message: "OTP sent", ...delivery };
   },
 
   verifyForgotOTP: async (email: string, otp: string) => {
@@ -216,8 +216,8 @@ export const authService = {
       create: { email: user.email, otp, verified: false, expiresAt },
     });
 
-    await emailService.sendOTP(user.email, otp, "change");
-    return { email: user.email };
+    const delivery = await emailService.sendOTP(user.email, otp, "change");
+    return { email: user.email, ...delivery };
   },
 
   changePassword: async (userId: string, otp: string, newPassword: string) => {

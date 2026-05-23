@@ -23,8 +23,11 @@ export const authController = {
           400,
         );
       }
-      await authService.sendOwnerSetupOTP(email, shopName);
-      sendSuccess(res, { message: "OTP sent to your email" });
+      const result = await authService.sendOwnerSetupOTP(email, shopName);
+      sendSuccess(res, {
+        message: "OTP sent to your email",
+        ...result,
+      });
     } catch (err: any) {
       if (err.message === "OWNER_EXISTS") {
         return sendError(
@@ -186,8 +189,8 @@ export const authController = {
       const { email } = req.body;
       if (!email)
         return sendError(res, "Email required", "VALIDATION_ERROR", 400);
-      await authService.sendForgotPasswordOTP(email);
-      sendSuccess(res, { message: "OTP sent" });
+      const result = await authService.sendForgotPasswordOTP(email);
+      sendSuccess(res, { message: "OTP sent", ...result });
     } catch (err: any) {
       if (err.message === "NOT_FOUND")
         return sendError(res, "No account with this email", "NOT_FOUND", 404);

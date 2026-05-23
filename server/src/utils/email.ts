@@ -68,10 +68,15 @@ export const emailService = {
     `;
 
     try {
-      // In development, also log the OTP to console to help debugging delivery issues
-      if (process.env.NODE_ENV !== 'production') {
+      if (process.env.NODE_ENV !== "production") {
         console.log(`DEV OTP for ${to}: ${otp}`);
       }
+
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.warn(`OTP fallback for ${to}: email credentials missing`);
+        return { delivered: false, fallback: true, otp };
+      }
+
       const info = await transporter.sendMail({
         from: process.env.EMAIL_FROM || `Pinklet POS <${process.env.EMAIL_USER}>`,
         to,
@@ -80,10 +85,11 @@ export const emailService = {
       });
 
       console.log(`Sent OTP email to ${to} — messageId=${info.messageId}`);
-      return info;
+      return { delivered: true, messageId: info.messageId };
     } catch (err) {
       console.error("Failed to send OTP email:", err);
-      throw err;
+      console.warn(`OTP fallback for ${to}: using local delivery`);
+      return { delivered: false, fallback: true, otp };
     }
   },
 };

@@ -18,7 +18,11 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       useAuthStore.getState().clearAuth();
-      window.location.href = "/auth";
+      if (window.location.protocol === "file:") {
+        window.location.hash = "#/auth";
+      } else {
+        window.location.href = "/auth";
+      }
     }
     return Promise.reject(error);
   },

@@ -4,7 +4,7 @@ import { settingsService } from '@/services/Settings.service'
 import { useAuthStore } from '@/stores/authStore'
 import { useNavigate } from 'react-router-dom'
 
-type Tab = 'general' | 'cashiers' | 'discounts' | 'security'
+type Tab = 'general' | 'cashiers' | 'discounts' | 'security' | 'backup'
 
 export default function Settings() {
   const user = useAuthStore((s) => s.user)
@@ -16,6 +16,7 @@ export default function Settings() {
     { key: 'cashiers', label: 'Cashier Accounts', icon: '👤' },
     { key: 'discounts', label: 'Discount Presets', icon: '🏷' },
     { key: 'security', label: 'Security', icon: '🔒' },
+    { key: 'backup', label: 'Backup & Restore', icon: '💾' },
   ]
 
   return (
@@ -60,6 +61,7 @@ export default function Settings() {
           {activeTab === 'cashiers' && <CashierSettings isOwner={isOwner} />}
           {activeTab === 'discounts' && <DiscountSettings isOwner={isOwner} />}
           {activeTab === 'security' && <SecuritySettings isOwner={isOwner} />}
+          {activeTab === 'backup' && <BackupSettings isOwner={isOwner} />}
         </div>
       </div>
     </div>
@@ -817,7 +819,7 @@ function BillingSettings({ isOwner }: { isOwner: boolean }) {
   )
 }
 
-function SecuritySettings() {
+function SecuritySettings({ isOwner }: { isOwner: boolean }) {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
 
@@ -857,9 +859,175 @@ function SecuritySettings() {
 
         <div style={{ backgroundColor: 'rgba(245,158,11,0.06)', borderRadius: '12px', padding: '12px 16px' }}>
           <p style={{ margin: 0, fontSize: '12px', color: '#92400e', lineHeight: 1.5 }}>
-            ⚠ <strong>Cashiers:</strong> You need an email linked to your account to change your password. Ask the owner to add your email in Settings → Cashier Accounts.
+            {isOwner
+              ? 'Owner accounts can change passwords from this screen after email verification.'
+              : '⚠ Cashiers: You need an email linked to your account to change your password. Ask the owner to add your email in Settings → Cashier Accounts.'}
           </p>
         </div>
+      </div>
+    </Section>
+  )
+}
+
+function BackupSettings({ isOwner }: { isOwner: boolean }) {
+  const [backups, setBackups] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+
+  const loadBackups = async () => {
+    try {
+      setLoading(true)
+      const data = await settingsService.listBackups()
+      setBackups(data)
+    } catch {
+      setError('Failed to load backups')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadBackups()
+  }, [])
+
+  const handleCreateBackup = async () => {
+    try {
+      setCreating(true)
+      setMessage('')
+      setError('')
+      await settingsService.createAutoBackup()
+      setMessage('✓ Backup created successfully')
+      loadBackups()
+    } catch {
+      setError('Failed to create backup')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const handleDownload = () => {
+    settingsService.downloadBackup()
+  }
+
+  const handleRestore = async (filename: string) => {
+    if (!confirm(`Restore from "${filename}"?\n\nThis will replace all current data. A safety backup will be created first.`)) return
+    try {
+      setLoading(true)
+      await settingsService.restoreBackup(filename)
+      setMessage('✓ Database restored. Please restart the server for changes to take effect.')
+    } catch {
+      setError('Failed to restore backup')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  return (
+    <Section title="Backup & Restore" description="Protect your business data with regular backups">
+
+      {!isOwner && (
+        <div style={{ backgroundColor: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '10px', padding: '12px 16px', marginBottom: '16px' }}>
+          <p style={{ margin: 0, fontSize: '13px', color: '#92400e' }}>⚠ Only the owner can manage backups.</p>
+        </div>
+      )}
+
+      {/* Info card */}
+      <div style={{ backgroundColor: 'rgba(59,59,152,0.06)', border: '1px solid rgba(59,59,152,0.15)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+        <p style={{ margin: '0 0 8px', fontSize: '13px', fontWeight: 600, color: '#3B3B98' }}>💾 About Backups</p>
+        <p style={{ margin: 0, fontSize: '12px', color: 'rgba(9,9,9,0.55)', lineHeight: 1.6 }}>
+          Backups save your complete database including all bills, customers, inventory, and settings.
+          Create a backup before making major changes. The system keeps the last 10 auto-backups automatically.
+          Store downloaded backups in a safe location like Google Drive or a USB drive.
+        </p>
+      </div>
+
+      {/* Action buttons */}
+      {isOwner && (
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          <button
+            onClick={handleCreateBackup}
+            disabled={creating}
+            style={{ padding: '11px 20px', borderRadius: '10px', border: 'none', backgroundColor: creating ? 'rgba(59,59,152,0.40)' : '#3B3B98', color: 'white', fontSize: '13px', fontWeight: 600, cursor: creating ? 'not-allowed' : 'pointer', fontFamily: 'Inter, sans-serif' }}
+          >
+            {creating ? 'Creating...' : '💾 Create Backup Now'}
+          </button>
+          <button
+            onClick={handleDownload}
+            style={{ padding: '11px 20px', borderRadius: '10px', border: '1px solid rgba(34,197,94,0.25)', backgroundColor: 'rgba(34,197,94,0.08)', color: '#16a34a', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+          >
+            📥 Download Current DB
+          </button>
+        </div>
+      )}
+
+      {/* Messages */}
+      {message && (
+        <div style={{ backgroundColor: 'rgba(34,197,94,0.08)', color: '#15803d', fontSize: '13px', padding: '10px 14px', borderRadius: '10px', marginBottom: '14px', fontWeight: 500 }}>
+          {message}
+        </div>
+      )}
+      {error && (
+        <div style={{ backgroundColor: '#fef2f2', color: '#dc2626', fontSize: '13px', padding: '10px 14px', borderRadius: '10px', marginBottom: '14px' }}>
+          {error}
+        </div>
+      )}
+
+      {/* Backups list */}
+      <p style={{ margin: '0 0 10px', fontSize: '11px', fontWeight: 700, color: 'rgba(9,9,9,0.40)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        Saved Backups ({backups.length})
+      </p>
+
+      {loading ? (
+        <p style={{ fontSize: '13px', color: 'rgba(9,9,9,0.40)' }}>Loading...</p>
+      ) : backups.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '30px', color: 'rgba(9,9,9,0.35)', backgroundColor: 'rgba(9,9,9,0.02)', borderRadius: '12px' }}>
+          <p style={{ fontSize: '14px', margin: '0 0 6px', fontWeight: 500 }}>No backups yet</p>
+          <p style={{ fontSize: '12px', margin: 0 }}>Click "Create Backup Now" to save your first backup</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {backups.map((backup, index) => (
+            <div key={backup.filename} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(9,9,9,0.07)', backgroundColor: index === 0 ? 'rgba(34,197,94,0.03)' : 'white' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: index === 0 ? 'rgba(34,197,94,0.12)' : 'rgba(9,9,9,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
+                💾
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#090909', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {backup.filename}
+                  {index === 0 && <span style={{ marginLeft: '8px', fontSize: '10px', padding: '2px 7px', borderRadius: '99px', backgroundColor: 'rgba(34,197,94,0.12)', color: '#16a34a', fontWeight: 600 }}>Latest</span>}
+                </p>
+                <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(9,9,9,0.45)' }}>
+                  {new Date(backup.createdAt).toLocaleString('en-LK')} · {formatSize(backup.size)}
+                </p>
+              </div>
+              {isOwner && (
+                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                  <button
+                    onClick={() => handleRestore(backup.filename)}
+                    style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.25)', backgroundColor: 'rgba(245,158,11,0.08)', color: '#b45309', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+                  >
+                    Restore
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Warning */}
+      <div style={{ marginTop: '16px', backgroundColor: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '10px', padding: '12px 16px' }}>
+        <p style={{ margin: 0, fontSize: '12px', color: '#dc2626', lineHeight: 1.5 }}>
+          ⚠ <strong>Restore Warning:</strong> Restoring a backup will replace ALL current data including bills, customers, and inventory with the backup version. This action cannot be undone. A safety backup is automatically created before restore.
+        </p>
       </div>
     </Section>
   )

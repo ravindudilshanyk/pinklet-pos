@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { type Application, Request, Response } from "express";
 const cors = require("cors");
 import { errorMiddleware } from "./middleware/error.middleware";
 import authRoutes from "./routes/auth.routes";
@@ -9,11 +9,18 @@ import salesRoutes from "./routes/sales.routes";
 import reportsRoutes from "./routes/reports.routes";
 import settingsRoutes from './routes/settings.routes'
 
-const app = express();
+const app: Application = express();
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin || origin === "http://localhost:5173" || origin === "null") {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );

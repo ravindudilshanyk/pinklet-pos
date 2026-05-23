@@ -193,8 +193,8 @@ export default function Topbar() {
 
       {/* Logo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-        <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#EE2D7C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: '14px' }}>🎀</span>
+        <div style={{ width: '28px', height: '28px', borderRadius: '8px', backgroundColor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: '14px' }}><img src="./icon.ico" alt="Logo" /></span>
         </div>
         <div>
           <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#EE2D7C', lineHeight: 1 }}>Pinklet</p>

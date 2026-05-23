@@ -2,7 +2,7 @@ import { Router } from "express";
 import { customersController } from "../controllers/customers.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 router.use(authMiddleware);
 
 router.get("/", customersController.getAll);

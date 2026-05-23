@@ -106,6 +106,9 @@ function QuickAddSupplier({
     lowStockAlert: '10',
     imagePreview: '',
     imageBase64: '',
+    phone: '',
+    email: '',
+    address: '',
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')

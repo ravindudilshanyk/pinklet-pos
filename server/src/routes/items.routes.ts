@@ -3,7 +3,7 @@ import { itemsController } from "../controllers/items.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 import { wasteController } from '../controllers/waste.controller'
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 router.use(authMiddleware);
 
 // Items
