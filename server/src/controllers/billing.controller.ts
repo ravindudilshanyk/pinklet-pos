@@ -57,4 +57,69 @@ export const billingController = {
       sendError(res, "Failed to delete held bill", "DELETE_ERROR", 500);
     }
   },
+
+  initiatePayhere: async (req: Request, res: Response) => {
+    try {
+      const { billNumber, amount, customerName, customerEmail, customerPhone } =
+        req.body;
+
+      const orderId = payhereService.generateOrderId(billNumber);
+      const hash = payhereService.generateHash(orderId, amount);
+
+      sendSuccess(res, {
+        merchantId: process.env.PAYHERE_MERCHANT_ID,
+        orderId,
+        amount: parseFloat(amount).toFixed(2),
+        currency: "LKR",
+        hash,
+        checkoutUrl: payhereService.getCheckoutUrl(),
+        customerName: customerName || "Customer",
+        customerEmail: customerEmail || "customer@example.com",
+        customerPhone: customerPhone || "0771234567",
+        returnUrl: "http://localhost:5173/payment-success",
+        cancelUrl: "http://localhost:5173/payment-cancel",
+        notifyUrl: `http://localhost:${process.env.PORT || 3001}/api/v1/billing/payhere/callback`,
+      });
+    } catch {
+      sendError(res, "Failed to initiate payment", "PAYHERE_ERROR", 500);
+    }
+  },
+
+  payhereCallback: async (req: Request, res: Response) => {
+    try {
+      const {
+        merchant_id,
+        order_id,
+        payment_id,
+        payhere_amount,
+        payhere_currency,
+        status_code,
+        md5sig,
+      } = req.body;
+
+      const valid = payhereService.verifyCallback(
+        merchant_id,
+        order_id,
+        payment_id,
+        payhere_amount,
+        payhere_currency,
+        status_code,
+        md5sig,
+      );
+
+      if (!valid) {
+        return res.status(400).send("Invalid signature");
+      }
+
+      // status_code 2 = successful
+      if (status_code === "2") {
+        console.log(`PayHere payment successful: ${order_id}`);
+        // TODO: Update bill status to paid
+      }
+
+      res.send("OK");
+    } catch {
+      res.status(500).send("Error");
+    }
+  },
 };

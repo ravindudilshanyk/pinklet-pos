@@ -17,12 +17,14 @@ import AppShell from "@/components/layout/AppShell";
 import PreOrders from '@/pages/PreOrders'
 import ForgotPassword from '@/pages/auth/ForgotPassword'
 import ChangePassword from '@/pages/auth/ChangePassword'
+import ShortcutsModal from '@/components/ui/ShortcutsModal'
 
 const queryClient = new QueryClient();
 
 function AppRoutes() {
   const { token } = useAuthStore()
   const [setupComplete, setSetupComplete] = useState<boolean | null>(null)
+  const [showShortcuts, setShowShortcuts] = useState(false)
 
   useEffect(() => {
     let isActive = true
@@ -44,6 +46,31 @@ function AppRoutes() {
       isActive = false
     }
   }, [])
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      // Don't trigger in input fields
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+      if (e.key === '?') setShowShortcuts(true)
+      if (e.key === 'Escape') setShowShortcuts(false)
+
+      // Alt + number navigation
+      if (e.altKey && token) {
+        const nav: Record<string, string> = {
+          '1': '/', '2': '/bill', '3': '/items',
+          '4': '/customers', '5': '/pre-orders',
+        }
+        if (nav[e.key]) {
+          e.preventDefault()
+          window.location.href = nav[e.key]
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [token])
 
   // Loading
   if (setupComplete === null) {

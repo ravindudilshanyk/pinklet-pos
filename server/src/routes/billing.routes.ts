@@ -2,6 +2,7 @@ import { Router } from "express";
 import { billingController } from "../controllers/billing.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 
+
 const router: ReturnType<typeof Router> = Router();
 
 router.use(authMiddleware);
@@ -11,5 +12,7 @@ router.post("/complete", billingController.completeBill);
 router.post("/hold", billingController.holdBill);
 router.get("/held", billingController.getHeldBills);
 router.delete("/held/:id", billingController.deleteHeldBill);
+router.post('/payhere/initiate', billingController.initiatePayhere)
+router.post('/payhere/callback', billingController.payhereCallback)
 
 export default router;

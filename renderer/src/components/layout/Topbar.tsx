@@ -3,6 +3,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { salesService } from '@/services/sales.service'
 import { itemsService } from '@/services/items.service'
 import { useNavigate } from 'react-router-dom'
+import ShortcutsModal from '@/components/ui/ShortcutsModal'
+import { customersService } from '@/services/customers.service'
 
 export default function Topbar() {
   const user = useAuthStore((s) => s.user)
@@ -12,6 +14,7 @@ export default function Topbar() {
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [online, setOnline] = useState<boolean>(true)
+  const [showShortcuts, setShowShortcuts] = useState(false)
 
   const seenNotificationsKey = 'pinklet-seen-notifications'
 
@@ -109,7 +112,53 @@ export default function Topbar() {
 
       const notifs: any[] = []
 
-      // Low stock alerts
+      // ── Birthday reminders ──────────────────────────────
+      try {
+        const customers = await customersService.getAll()
+        const today = new Date()
+        const todayMonth = today.getMonth()
+        const todayDate = today.getDate()
+        const tomorrowDate = new Date(today)
+        tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+
+        customers.forEach((c: any) => {
+          if (!c.birthday) return
+          const bday = new Date(c.birthday)
+          const bdayMonth = bday.getMonth()
+          const bdayDate = bday.getDate()
+
+          const isToday = bdayMonth === todayMonth && bdayDate === todayDate
+          const isTomorrow = bdayMonth === tomorrowDate.getMonth() && bdayDate === tomorrowDate.getDate()
+          const isInWeek = (() => {
+            for (let i = 2; i <= 7; i++) {
+              const d = new Date(today)
+              d.setDate(d.getDate() + i)
+              if (bdayMonth === d.getMonth() && bdayDate === d.getDate()) return true
+            }
+            return false
+          })()
+
+          if (isToday || isTomorrow || isInWeek) {
+            notifs.push({
+              id: `birthday-${c.id}`,
+              type: 'birthday',
+              title: isToday ? '🎂 Birthday Today!' : isTomorrow ? '🎂 Birthday Tomorrow' : '🎂 Upcoming Birthday',
+              message: `${c.name} — ${bday.toLocaleDateString('en-LK', { month: 'long', day: 'numeric' })}`,
+              color: isToday ? '#EE2D7C' : '#f59e0b',
+              bg: isToday ? 'rgba(238,45,124,0.10)' : 'rgba(245,158,11,0.10)',
+              icon: '🎂',
+              action: () => navigate('/customers'),
+              time: isToday ? 'TODAY!' : isTomorrow ? 'Tomorrow' : `In ${Math.ceil((new Date(today.getFullYear(), bdayMonth, bdayDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))} days`,
+              whatsapp: c.whatsappNumber || c.phone,
+              customerName: c.name,
+            })
+          }
+        })
+      } catch {
+        // Silent fail
+      }
+
+      // ── Low stock alerts ────────────────────────────────
       lowStock.forEach((item: any) => {
         notifs.push({
           id: `low-${item.id}`,
@@ -124,22 +173,22 @@ export default function Topbar() {
         })
       })
 
-      // Upcoming pre-orders
+      // ── Upcoming pre-orders ─────────────────────────────
       upcoming.forEach((order: any) => {
         const deliveryDate = new Date(order.deliveryDate)
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
-        const tomorrow = new Date(today)
-        tomorrow.setDate(tomorrow.getDate() + 1)
+        const todayCheck = new Date()
+        todayCheck.setHours(0, 0, 0, 0)
+        const tomorrowCheck = new Date(todayCheck)
+        tomorrowCheck.setDate(tomorrowCheck.getDate() + 1)
 
-        const isToday = deliveryDate.toDateString() === today.toDateString()
-        const isTomorrow = deliveryDate.toDateString() === tomorrow.toDateString()
+        const isToday = deliveryDate.toDateString() === todayCheck.toDateString()
+        const isTomorrow = deliveryDate.toDateString() === tomorrowCheck.toDateString()
 
         notifs.push({
           id: `order-${order.id}`,
           type: 'pre_order',
           title: isToday ? '🚨 Due Today!' : isTomorrow ? '📅 Due Tomorrow' : '📋 Upcoming Order',
-          message: `${order.customer?.name || 'Walk-in'} — ${order.note || 'Pre-order'} — Rs. ${order.total?.toFixed(2)}`,
+          message: `${order.customer?.name || 'Walk-in'} — ${order.note || 'Pre-order'} — Rs.${order.total?.toFixed(2)}`,
           color: isToday ? '#ef4444' : '#3B3B98',
           bg: isToday ? 'rgba(239,68,68,0.08)' : 'rgba(59,59,152,0.08)',
           icon: isToday ? '🚨' : '📅',
@@ -148,11 +197,10 @@ export default function Topbar() {
         })
       })
 
-      const seenIds = new Set<string>(getSeenNotifications())
       setNotifications(notifs)
-      setUnreadCount(notifs.filter((notif) => !seenIds.has(String(notif.id))).length)
+      setUnreadCount(notifs.length)
     } catch {
-      // Silent fail
+      // Silent
     }
   }
 
@@ -226,6 +274,24 @@ export default function Topbar() {
           <QuickBtn label="Pre-Orders" icon="📋" onClick={() => navigate('/pre-orders')} color="#f59e0b" />
         </div>
 
+        <button
+          onClick={() => setShowShortcuts(true)}
+          title="Keyboard Shortcuts (?)"
+          style={{
+            width: '36px', height: '36px', borderRadius: '10px',
+            border: '1px solid rgba(9,9,9,0.08)',
+            backgroundColor: 'white', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '14px', color: 'rgba(9,9,9,0.50)',
+            fontWeight: 700, fontFamily: 'monospace',
+            flexShrink: 0,
+          }}
+        >
+          ?
+        </button>
+
+        {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
+
         {/* Notification count badges */}
         {notifications.filter(n => n.type === 'low_stock').length > 0 && (
           <div
@@ -248,6 +314,44 @@ export default function Topbar() {
             <span style={{ fontSize: '11px', fontWeight: 700, color: '#3B3B98' }}>
               {notifications.filter(n => n.type === 'pre_order').length} due soon
             </span>
+          </div>
+        )}
+        {/* Birthdays */}
+        {notifications.filter(n => n.type === 'birthday').length > 0 && (
+          <div>
+            <p style={{ margin: 0, padding: '10px 18px 6px', fontSize: '10px', fontWeight: 700, color: 'rgba(9,9,9,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              🎂 Birthdays
+            </p>
+            {notifications.filter(n => n.type === 'birthday').map((notif) => (
+              <div key={notif.id} style={{ position: 'relative' }}>
+                <NotifItem notif={notif} onClose={() => setShowNotifications(false)} />
+                {/* WhatsApp birthday wish button */}
+                {notif.whatsapp && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      const number = notif.whatsapp.replace(/[\s\-\+\(\)]/g, '')
+                      const finalNumber = number.startsWith('0') ? '94' + number.slice(1) : number
+                      const message = encodeURIComponent(
+                        `🎂 Happy Birthday ${notif.customerName}! 🎉\n\nWishing you a wonderful day filled with joy!\n\nWith love from Pinklet 🎀`
+                      )
+                      window.open(`https://wa.me/${finalNumber}?text=${message}`, '_blank')
+                      setShowNotifications(false)
+                    }}
+                    style={{
+                      position: 'absolute', right: '12px', top: '50%',
+                      transform: 'translateY(-50%)',
+                      padding: '4px 8px', borderRadius: '6px',
+                      border: 'none', backgroundColor: '#25D366',
+                      color: 'white', fontSize: '10px', fontWeight: 600,
+                      cursor: 'pointer', fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    💬 Wish
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useBillingStore } from '@/stores/billingStore'
 import { billService } from '@/services/billing.service'
 import BillCompletedModal from './BillCompletedModal'
+import api from '@/services/api'
 
 interface Props {
   onClose: () => void
@@ -19,7 +20,7 @@ export default function PaymentModal({ onClose }: Props) {
   const getTotal = useBillingStore((s) => s.getTotal)
   const clearBill = useBillingStore((s) => s.clearBill)
 
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'other'>('cash')
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash')
   const [amountReceived, setAmountReceived] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -30,13 +31,10 @@ export default function PaymentModal({ onClose }: Props) {
   const subtotal = getSubtotal()
   const discount = getTotalDiscount()
 
-  // For pre-order: only collect advance now
   const advanceAmount = isPreOrder
     ? parseFloat(preOrder.advancePayment || '0')
     : 0
   const balanceAmount = isPreOrder ? Math.max(0, orderTotal - advanceAmount) : 0
-
-  // Amount to collect NOW
   const amountDueNow = isPreOrder ? advanceAmount : orderTotal
 
   const received = parseFloat(amountReceived || '0')
@@ -51,12 +49,9 @@ export default function PaymentModal({ onClose }: Props) {
       setError(`Amount received must be at least Rs. ${amountDueNow.toFixed(2)}`)
       return
     }
-
     setError('')
-
     try {
       setLoading(true)
-
       const billData = {
         type: activeTab,
         status: isPreOrder ? 'pending' : 'completed',
@@ -88,12 +83,65 @@ export default function PaymentModal({ onClose }: Props) {
           advancePayment: advanceAmount,
         } : {}),
       }
-
       const result = await billService.completeBill(billData)
       setCompletedBill(result)
     } catch (err: any) {
       const msg = err?.response?.data?.error?.message || err?.message || 'Failed to complete bill'
       setError(msg)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handlePayhere = async () => {
+    setError('')
+    try {
+      setLoading(true)
+      const res = await api.post('/billing/payhere/initiate', {
+        billNumber: `DRAFT-${Date.now()}`,
+        amount: amountDueNow,
+        customerName: customer?.name,
+        customerPhone: customer?.phone,
+      })
+      const data = res.data.data
+
+      const form = document.createElement('form')
+      form.method = 'POST'
+      form.action = data.checkoutUrl
+      form.target = '_blank'
+
+      const fields: Record<string, string> = {
+        merchant_id: data.merchantId,
+        return_url: data.returnUrl,
+        cancel_url: data.cancelUrl,
+        notify_url: data.notifyUrl,
+        order_id: data.orderId,
+        items: items.map(i => i.name).join(', '),
+        currency: data.currency,
+        amount: data.amount,
+        first_name: (customer?.name || 'Customer').split(' ')[0],
+        last_name: (customer?.name || '').split(' ').slice(1).join(' ') || 'Customer',
+        email: 'customer@example.com',
+        phone: customer?.phone || '0771234567',
+        address: 'Colombo',
+        city: 'Colombo',
+        country: 'Sri Lanka',
+        hash: data.hash,
+      }
+
+      Object.entries(fields).forEach(([key, value]) => {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = key
+        input.value = value
+        form.appendChild(input)
+      })
+
+      document.body.appendChild(form)
+      form.submit()
+      document.body.removeChild(form)
+    } catch {
+      setError('Failed to initiate PayHere payment. Check merchant configuration.')
     } finally {
       setLoading(false)
     }
@@ -124,6 +172,7 @@ export default function PaymentModal({ onClose }: Props) {
         backgroundColor: 'white', borderRadius: '20px',
         padding: '28px', width: '100%', maxWidth: '420px',
         boxShadow: '0 8px 32px rgba(9,9,9,0.15)',
+        maxHeight: '90vh', overflowY: 'auto',
       }}>
 
         {/* Header */}
@@ -138,7 +187,10 @@ export default function PaymentModal({ onClose }: Props) {
               </p>
             )}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', color: 'rgba(9,9,9,0.40)' }}>×</button>
+          <button
+            onClick={onClose}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', color: 'rgba(9,9,9,0.40)' }}
+          >×</button>
         </div>
 
         {/* Bill summary */}
@@ -149,14 +201,10 @@ export default function PaymentModal({ onClose }: Props) {
               <span style={{ fontSize: '12px', fontWeight: 600, color: '#EE2D7C' }}>{customer.name}</span>
             </div>
           )}
-
-          {/* Order total (full) */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
             <span style={{ fontSize: '12px', color: 'rgba(9,9,9,0.50)' }}>Order Total</span>
             <span style={{ fontSize: '12px', color: '#090909' }}>Rs. {orderTotal.toFixed(2)}</span>
           </div>
-
-          {/* Pre-order breakdown */}
           {isPreOrder && advanceAmount > 0 && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
@@ -169,7 +217,6 @@ export default function PaymentModal({ onClose }: Props) {
               </div>
             </>
           )}
-
           <div style={{ borderTop: '1px solid rgba(9,9,9,0.08)', marginTop: '8px', paddingTop: '8px', display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ fontSize: '15px', fontWeight: 700, color: '#090909' }}>
               {isPreOrder && advanceAmount > 0 ? 'Collecting Now' : 'Total'}
@@ -178,26 +225,23 @@ export default function PaymentModal({ onClose }: Props) {
               Rs. {amountDueNow > 0 ? amountDueNow.toFixed(2) : '0.00'}
             </span>
           </div>
-
-          {/* No advance note */}
           {isPreOrder && advanceAmount === 0 && (
             <div style={{ marginTop: '8px', padding: '8px 10px', backgroundColor: 'rgba(245,158,11,0.08)', borderRadius: '8px' }}>
               <p style={{ margin: 0, fontSize: '11px', color: '#92400e' }}>
-                ⚠ No advance set — full balance of Rs. {orderTotal.toFixed(2)} will be collected on delivery
+                ⚠ No advance set — full balance of Rs. {orderTotal.toFixed(2)} collected on delivery
               </p>
             </div>
           )}
         </div>
 
-        {/* Only show payment input if there's something to collect now */}
         {amountDueNow > 0 ? (
           <>
-            {/* Payment method */}
+            {/* Payment method — Cash and Card only */}
             <p style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
               Payment Method
             </p>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
-              {(['cash', 'card', 'other'] as const).map((m) => (
+              {(['cash', 'card'] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => { setPaymentMethod(m); setError('') }}
@@ -210,12 +254,12 @@ export default function PaymentModal({ onClose }: Props) {
                     cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                   }}
                 >
-                  {m === 'cash' ? '💵 Cash' : m === 'card' ? '💳 Card' : '🔄 Other'}
+                  {m === 'cash' ? '💵 Cash' : '💳 Card'}
                 </button>
               ))}
             </div>
 
-            {/* Cash amount */}
+            {/* Cash amount input */}
             {paymentMethod === 'cash' && (
               <>
                 <p style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
@@ -283,20 +327,46 @@ export default function PaymentModal({ onClose }: Props) {
               </>
             )}
 
-            {/* Card/Other */}
-            {paymentMethod !== 'cash' && (
+            {/* Card info */}
+            {paymentMethod === 'card' && (
               <div style={{ backgroundColor: 'rgba(59,59,152,0.06)', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
                 <p style={{ margin: 0, fontSize: '13px', color: '#3B3B98', fontWeight: 500 }}>
-                  {paymentMethod === 'card' ? '💳 Card payment' : '🔄 Other payment'}
+                  💳 Card payment — full amount will be charged
                 </p>
                 <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'rgba(9,9,9,0.45)' }}>
                   Collecting: Rs. {amountDueNow.toFixed(2)}
                 </p>
               </div>
             )}
+
+            {/* PayHere section */}
+            <div style={{ marginTop: '12px', borderTop: '1px solid rgba(9,9,9,0.06)', paddingTop: '12px' }}>
+              <p style={{ margin: '0 0 8px', fontSize: '11px', fontWeight: 600, color: 'rgba(9,9,9,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Online Payment
+              </p>
+              <button
+                onClick={handlePayhere}
+                disabled={loading || items.length === 0}
+                style={{
+                  width: '100%', padding: '12px', borderRadius: '12px',
+                  border: '2px solid #0097d4',
+                  backgroundColor: 'rgba(0,151,212,0.06)',
+                  color: '#0097d4', fontSize: '13px', fontWeight: 700,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  opacity: loading ? 0.6 : 1,
+                }}
+              >
+                <span style={{ fontSize: '18px' }}>💳</span>
+                Pay with PayHere (Cards / Bank Transfer)
+              </button>
+              <p style={{ margin: '6px 0 0', fontSize: '11px', color: 'rgba(9,9,9,0.40)', textAlign: 'center' }}>
+                Visa · MasterCard · AMEX · eZ Cash · mCash
+              </p>
+            </div>
           </>
         ) : (
-          /* No advance — just confirm */
           <div style={{ backgroundColor: 'rgba(245,158,11,0.06)', borderRadius: '12px', padding: '16px', marginBottom: '12px' }}>
             <p style={{ margin: 0, fontSize: '13px', color: '#92400e', fontWeight: 500, textAlign: 'center' }}>
               Order will be saved. Full balance of Rs. {orderTotal.toFixed(2)} to be collected on delivery.
@@ -306,7 +376,7 @@ export default function PaymentModal({ onClose }: Props) {
 
         {/* Error */}
         {error && (
-          <div style={{ backgroundColor: '#fef2f2', color: '#dc2626', fontSize: '13px', padding: '10px 14px', borderRadius: '10px', marginBottom: '12px' }}>
+          <div style={{ backgroundColor: '#fef2f2', color: '#dc2626', fontSize: '13px', padding: '10px 14px', borderRadius: '10px', marginBottom: '12px', marginTop: '8px' }}>
             {error}
           </div>
         )}
@@ -317,6 +387,7 @@ export default function PaymentModal({ onClose }: Props) {
           disabled={loading || (amountDueNow > 0 && !canComplete)}
           style={{
             width: '100%', padding: '15px', borderRadius: '12px', border: 'none',
+            marginTop: '12px',
             backgroundColor: (canComplete || amountDueNow === 0) && !loading ? '#EE2D7C' : 'rgba(238,45,124,0.35)',
             color: 'white', fontSize: '15px', fontWeight: 700,
             cursor: (canComplete || amountDueNow === 0) && !loading ? 'pointer' : 'not-allowed',
@@ -329,8 +400,7 @@ export default function PaymentModal({ onClose }: Props) {
               ? advanceAmount > 0
                 ? `Confirm & Collect Rs. ${advanceAmount.toFixed(2)}`
                 : 'Confirm Pre-Order'
-              : 'Complete Bill'
-          }
+              : 'Complete Bill'}
         </button>
       </div>
     </div>

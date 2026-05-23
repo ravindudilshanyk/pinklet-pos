@@ -5,6 +5,8 @@ import ItemGrid from "@/components/billing/ItemGrid";
 import BillPanel from "@/components/billing/BillPanel";
 import CustomItemModal from "@/components/billing/CustomItemModal";
 import { useBillingStore } from "@/stores/billingStore";
+import { useBarcodeScanner } from '@/hooks/useBarcodeScanner'
+import { itemsService } from '@/services/items.service'
 
 export default function MakeBill() {
   const [search, setSearch] = useState("");
@@ -16,6 +18,7 @@ export default function MakeBill() {
   const searchRef = useRef<HTMLInputElement>(null);
   const addItem = useBillingStore((s) => s.addItem);
   const setFocusItemId = useBillingStore((s) => s.setFocusItemId);
+  const [scanFeedback, setScanFeedback] = useState<{ name: string; found: boolean } | null>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
@@ -91,6 +94,32 @@ export default function MakeBill() {
       setSelectedItemIndex(0);
     }
   };
+
+  useBarcodeScanner({
+    onScan: async (barcode) => {
+      try {
+        const item = await itemsService.getItemByBarcode(barcode)
+        if (item) {
+          addItem({
+            itemId: item.id,
+            name: item.name,
+            unitPrice: item.sellingPrice,
+            buyingPrice: item.buyingPrice,
+            marketPrice: item.marketPrice,
+            quantity: 1,
+            stock: item.stock,
+          })
+          setScanFeedback({ name: item.name, found: true })
+        } else {
+          setScanFeedback({ name: barcode, found: false })
+        }
+      } catch {
+        setScanFeedback({ name: barcode, found: false })
+      }
+      // Clear feedback after 2 seconds
+      setTimeout(() => setScanFeedback(null), 2000)
+    },
+  })
 
   useEffect(() => {
     setSelectedItemIndex(0);
@@ -248,6 +277,25 @@ export default function MakeBill() {
             🎂 Custom Item
           </button>
         </div>
+
+        {/* Barcode scan feedback */}
+        {scanFeedback && (
+          <div style={{
+            position: 'fixed', top: '70px', right: '20px',
+            padding: '12px 18px', borderRadius: '12px',
+            backgroundColor: scanFeedback.found ? 'rgba(34,197,94,0.95)' : 'rgba(239,68,68,0.95)',
+            color: 'white', fontSize: '13px', fontWeight: 600,
+            fontFamily: 'Inter, sans-serif',
+            boxShadow: '0 4px 20px rgba(9,9,9,0.20)',
+            zIndex: 999, display: 'flex', alignItems: 'center', gap: '8px',
+            animation: 'slideIn 0.2s ease',
+          }}>
+            {scanFeedback.found ? '✓' : '✕'}{' '}
+            {scanFeedback.found
+              ? `Added: ${scanFeedback.name}`
+              : `Not found: ${scanFeedback.name}`}
+          </div>
+        )}
 
         {/* Item grid */}
         <div style={{ flex: 1, overflowY: "auto" }}>
