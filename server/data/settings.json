@@ -1,0 +1,14 @@
+{
+  "shopName": "Pinklet POS System",
+  "shopAddress": "",
+  "shopPhone": "0771234567",
+  "shopEmail": "",
+  "currency": "LKR",
+  "currencySymbol": "Rs.",
+  "taxRate": 0,
+  "taxName": "Tax",
+  "receiptFooter": "Thank you for shopping with us! 🎀",
+  "loyaltyCoinsPerAmount": 1000,
+  "coinValue": 1,
+  "minBillForRedemption": 200
+}
